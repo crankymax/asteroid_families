@@ -71,10 +71,10 @@ clone_assignments = list()
 for a_n, asteroid in enumerate(lth_eph_df.index):
     for p_n, particle_cols in enumerate(particles):
         particle_vals = lth_eph_df.loc[asteroid][particle_cols]
-        assigned_sim_no = (((p_n + 1) * (a_n + 1)) % sim_number)-1
+        assigned_sim_no = ((p_n + (a_n*len(particles))) % sim_number)
         sim = sim_list[assigned_sim_no]
         sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals[2],
-                vx=particle_vals.iloc[0], vy=particle_vals.iloc[1], vz=particle_vals[2])
+                vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals[5])
         clone_assignments.append([assigned_sim_no, len(sim.particles), asteroid, particle_cols])
 
 # Write out the simulations
