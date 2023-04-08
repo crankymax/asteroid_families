@@ -1,3 +1,4 @@
 /luthera_sims/
 *.pkl
 
+/run_logs/

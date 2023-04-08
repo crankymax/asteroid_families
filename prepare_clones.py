@@ -6,7 +6,8 @@ import pandas as pd
 from horizons_api import retrieve_ephemeris, convert_dy2yr
 from parse_afp_family import parse_fam_families
 from sim_creation import create_rebound_sims
-from rebound_run_sim import run_sim
+
+
 def add_level(inputs, levels):
     next_level = []
     for lvl in levels:
@@ -25,7 +26,7 @@ afp_fam_df.to_pickle('afp_families.pkl')
 
 lth_fam_df = pd.DataFrame(luthera_family, columns=afp_fam_cols)
 lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(pd.to_numeric)
-lth_fam_df.to_pickle('lth_family.pkl')
+lth_fam_df.to_pickle('luthera_family.pkl')
 
 if not Path('luthera_eph.pkl').exists():
     luther_ephemeris = retrieve_ephemeris(luthera_family)
@@ -60,7 +61,8 @@ particles = [list(parts) for parts in itertools.product(*ephem_types)]
 particles.append(['X', 'Y', 'Z', 'VX', 'VY', 'VZ'])
 
 # Determine the number of sims
-sim_number = math.ceil((len(lth_eph_df)*len(particles)) / 13.0)
+clones_per_sim = 13
+sim_number = math.ceil((len(lth_eph_df)*len(particles)) / clones_per_sim)
 sim_list = create_rebound_sims(sim_number)
 
 # now we need ~4k files with 13 particles in each without overlapping pos values
@@ -76,6 +78,10 @@ for a_n, asteroid in enumerate(lth_eph_df.index):
         sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals[2],
                 vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals[5])
         clone_assignments.append([assigned_sim_no, len(sim.particles), asteroid, particle_cols])
+
+cln_asg_cols = ['sim_no', 'particle_number', 'ast_name', 'particle_types']
+cln_asg_df = pd.DataFrame(clone_assignments, columns=afp_fam_cols)
+cln_asg_df.to_pickle('luthera_eph.pkl')
 
 # Write out the simulations
 for sim_no, sim in enumerate(sim_list):
