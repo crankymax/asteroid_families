@@ -22,21 +22,21 @@ asteroids, luthera_family = parse_fam_families()
 afp_fam_cols = ['ast_name', 'abs_mag', 'a_P', 'e_P', 'sineI_P', 'family_id']
 afp_fam_df = pd.DataFrame(asteroids, columns=afp_fam_cols)
 afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(pd.to_numeric)
-afp_fam_df.to_pickle('afp_families.pkl')
+afp_fam_df.to_hdf('afp_families.h5', 'afp_families', mode='w')
 
 lth_fam_df = pd.DataFrame(luthera_family, columns=afp_fam_cols)
 lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(pd.to_numeric)
-lth_fam_df.to_pickle('luthera_family.pkl')
+lth_fam_df.to_hdf('luthera_family.h5', 'luthera_family', mode='w')
 
-if not Path('luthera_eph.pkl').exists():
+if not Path('luthera_eph.h5').exists():
     luther_ephemeris = retrieve_ephemeris(luthera_family)
     cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
     lth_eph_df = pd.DataFrame(luther_ephemeris, columns=cols_df)
     convert_dy2yr(lth_eph_df)
     # Save a copy
-    lth_eph_df.to_pickle('luthera_eph.pkl')
+    lth_eph_df.to_hdf('luthera_eph.h5', 'luthera_eph', mode='w')
 else:
-    lth_eph_df = pd.read_pickle('luthera_eph.pkl')
+    lth_eph_df = pd.read_hdf('luthera_eph.h5', 'luthera_eph')
 
 # produce a new column for each of the clones as values +- sigma
 lth_eph_df['Xcp'] = lth_eph_df['X'] * (1 + lth_eph_df['sX'])
@@ -75,16 +75,15 @@ for a_n, asteroid in enumerate(lth_eph_df.index):
         particle_vals = lth_eph_df.loc[asteroid][particle_cols]
         assigned_sim_no = ((p_n + (a_n*len(particles))) % sim_number)
         sim = sim_list[assigned_sim_no]
-        sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals[2],
-                vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals[5])
+        sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals.iloc[2],
+                vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals.iloc[5])
         clone_assignments.append([assigned_sim_no, len(sim.particles), asteroid, particle_cols])
 
 cln_asg_cols = ['sim_no', 'particle_number', 'ast_name', 'particle_types']
-cln_asg_df = pd.DataFrame(clone_assignments, columns=afp_fam_cols)
-cln_asg_df.to_pickle('luthera_eph.pkl')
+cln_asg_df = pd.DataFrame(clone_assignments, columns=cln_asg_cols)
+cln_asg_df.to_hdf('clone_assignments.h5', 'clone_assignments', mode='w')
 
 # Write out the simulations
 for sim_no, sim in enumerate(sim_list):
     file_name = f'./luthera_sims/luther_sim_{sim_no:04}.bin'
     sim.save(file_name)
-

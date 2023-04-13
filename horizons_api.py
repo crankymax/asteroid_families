@@ -1,4 +1,5 @@
 import requests
+import numpy as np
 
 
 def is_float(element: any) -> bool:
@@ -16,6 +17,7 @@ def check_ephem(ast_values):
         return False
 
     return True
+
 
 def retrieve_ephemeris(asteroids):
     results = dict()
@@ -70,9 +72,10 @@ def retrieve_ephemeris(asteroids):
 
 
 def convert_dy2yr(eph_df):
-        eph_df['VX'] = eph_df['VX'] / 365.25
-        eph_df['VY'] = eph_df['VY'] / 365.25
-        eph_df['VZ'] = eph_df['VZ'] / 365.25
-        eph_df['sVX'] = eph_df['sVX'] / 365.25
-        eph_df['sVY'] = eph_df['sVY'] / 365.25
-        eph_df['sVZ'] = eph_df['sVZ'] / 365.25
+    dy2yr = 365.25 / (2 * np.pi)
+    eph_df['VX'] = eph_df['VX'] * dy2yr
+    eph_df['VY'] = eph_df['VY'] * dy2yr
+    eph_df['VZ'] = eph_df['VZ'] * dy2yr
+    eph_df['sVX'] = eph_df['sVX'] * dy2yr
+    eph_df['sVY'] = eph_df['sVY'] * dy2yr
+    eph_df['sVZ'] = eph_df['sVZ'] * dy2yr

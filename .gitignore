@@ -1,4 +1,7 @@
-/luthera_sims/
 *.pkl
+
+*.h5
+
+/luthera_sims/
 
 /run_logs/

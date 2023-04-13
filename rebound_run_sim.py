@@ -1,3 +1,5 @@
+import sys
+
 import itertools
 from datetime import datetime
 import h5py as h5
@@ -43,7 +45,7 @@ def run_sim(sim_params) -> dict:
                 run_values[ti][i][7] = p.e
                 run_values[ti][i][8] = p.inc
 
-    sim.save(sim_file.replace(".bin", "_fin.bin"))
+    sim.save(sim_file.replace(".bin", "_fin.bin").replace("luthera_sims", "run_logs"))
     print(f'-{sim_no} {run_length}: {time.time()-start}')
     stats['clock_time'] = time.time()-start
     stats['int_length'] = run_length
@@ -59,23 +61,32 @@ def run_sim(sim_params) -> dict:
 
 
 if __name__ == '__main__':
-    multi = True
     runtime = datetime.today().strftime('%Y%m%d_%H%M')
-    if multi:
-        ft_params = itertools.product([f'./luthera_sims/luther_sim_{sim_no:04}.bin' for sim_no in range(6)],
-                                      [1.e6, 2.5e6, 5.e6, 7.5e6, 1.e7])
-
-        params = list()
-        for ptup in ft_params:
-            ft_list = list(ptup)
-            ft_list.append(runtime)
-            params.append(ft_list)
-
-        pool = InterruptiblePool(processes=3)
-        res = pool.map(run_sim, params)
-        results_df = pd.DataFrame.from_dict(res)
-        results_df.to_pickle(f"./run_logs/results_{runtime}.pkl")
-
+    if len(sys.argv) > 1:
+        sim_no = int(sys.argv[1])
+        run_length = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0e8
+        print([f'./luthera_sims/luther_sim_{sim_no:04}.bin', run_length, datetime.today().strftime('%Y%m%d_%H%M')])
+        run_sim([f'./luthera_sims/luther_sim_{sim_no:04}.bin', run_length, datetime.today().strftime('%Y%m%d_%H%M')])
+        exit(0)
     else:
-        res = run_sim(['./luthera_sims/luther_sim_0000.bin', 1.0e5, datetime.today().strftime('%Y%m%d_%H%M')])
+        exit(0)
+        multi_test = False
+        if multi_test:
+            runtime = datetime.today().strftime('%Y%m%d_%H%M')
+            ft_params = itertools.product([f'./luthera_sims/luther_sim_{sim_no:04}.bin' for sim_no in range(3, 6)],
+                                          [1.e6, 1.e7, 1.e8, 1.e9])
+
+            params = list()
+            for ptup in ft_params:
+                ft_list = list(ptup)
+                ft_list.append(runtime)
+                params.append(ft_list)
+
+            pool = InterruptiblePool(processes=3)
+            res = pool.map(run_sim, params)
+            results_df = pd.DataFrame.from_dict(res)
+            results_df.to_hdf(f"./run_logs/results_{runtime}.h5", 'results', mode='w')
+
+        else:
+            res = run_sim(['./luthera_sims/luther_sim_0000.bin', 1.0e5, datetime.today().strftime('%Y%m%d_%H%M')])
 
