@@ -14,7 +14,7 @@ import warnings
 
 def run_sim(sim_params) -> dict:
     sim_file, run_length, run_time = sim_params
-    sim_no = sim_file.split('sim_')[1][:4]
+    sim_no = sim_file.split('sim_')[1][:5]
     stats = {'sim_number': sim_no}
     sim = rebound.Simulation(sim_file)
     # record the number of particles
@@ -29,7 +29,7 @@ def run_sim(sim_params) -> dict:
 
     run_values = np.zeros((log_time, n_particles, vals))
     # Capture warning messages (WHFast timestep too large)
-    print(f'+{sim_no} {run_length}')
+    print(f"{datetime.today().strftime('%Y%m%d_%H%M')}+{sim_no} {run_length:.1e}")
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         for ti, t in enumerate(times):
@@ -46,11 +46,11 @@ def run_sim(sim_params) -> dict:
                 run_values[ti][i][8] = p.inc
 
     sim.save(sim_file.replace(".bin", "_fin.bin").replace("luthera_sims", "run_logs"))
-    print(f'-{sim_no} {run_length}: {time.time()-start}')
+    print(f"{datetime.today().strftime('%Y%m%d_%H%M')}-{sim_no} {run_length:.1e} length:{time.time()-start}")
     stats['clock_time'] = time.time()-start
     stats['int_length'] = run_length
 
-    with h5.File(f"./run_logs/luthera_sim_{run_time}_{sim_no}.h5", 'w') as run_log:
+    with h5.File(f"./run_logs/luthera_log_{run_time}_{sim_no}.h5", 'w') as run_log:
         run_log.attrs['simulation'] = sim_no
         run_log.attrs['int_length'] = run_length
         run_log.attrs['clock_time'] = time.time() - start
@@ -62,19 +62,19 @@ def run_sim(sim_params) -> dict:
 
 if __name__ == '__main__':
     runtime = datetime.today().strftime('%Y%m%d_%H%M')
+    print(sys.argv)
     if len(sys.argv) > 1:
         sim_no = int(sys.argv[1])
         run_length = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0e8
-        print([f'./luthera_sims/luther_sim_{sim_no:04}.bin', run_length, datetime.today().strftime('%Y%m%d_%H%M')])
-        run_sim([f'./luthera_sims/luther_sim_{sim_no:04}.bin', run_length, datetime.today().strftime('%Y%m%d_%H%M')])
+        print([f'./luthera_sims/luthera_sim_{sim_no:05}.bin', run_length, runtime])
+        run_sim([f'./luthera_sims/luthera_sim_{sim_no:05}.bin', run_length, runtime])
         exit(0)
     else:
-        exit(0)
         multi_test = False
         if multi_test:
             runtime = datetime.today().strftime('%Y%m%d_%H%M')
-            ft_params = itertools.product([f'./luthera_sims/luther_sim_{sim_no:04}.bin' for sim_no in range(3, 6)],
-                                          [1.e6, 1.e7, 1.e8, 1.e9])
+            ft_params = itertools.product([f'./luthera_sims/luther_sim_{sim_no:05}.bin' for sim_no in range(3, 6)],
+                                          [1.e6, 2.5e6, 5.e6, 7.5e6, 1.e7])
 
             params = list()
             for ptup in ft_params:
@@ -88,5 +88,5 @@ if __name__ == '__main__':
             results_df.to_hdf(f"./run_logs/results_{runtime}.h5", 'results', mode='w')
 
         else:
-            res = run_sim(['./luthera_sims/luther_sim_0000.bin', 1.0e5, datetime.today().strftime('%Y%m%d_%H%M')])
+            res = run_sim(['./luthera_sims/luther_sim_00000.bin', 1.0e5, datetime.today().strftime('%Y%m%d_%H%M')])
 

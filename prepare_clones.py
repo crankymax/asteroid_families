@@ -61,12 +61,13 @@ particles = [list(parts) for parts in itertools.product(*ephem_types)]
 particles.append(['X', 'Y', 'Z', 'VX', 'VY', 'VZ'])
 
 # Determine the number of sims
-clones_per_sim = 13
+clones_per_sim = 5
 sim_number = math.ceil((len(lth_eph_df)*len(particles)) / clones_per_sim)
 sim_list = create_rebound_sims(sim_number)
 
-# now we need ~4k files with 13 particles in each without overlapping pos values
+# Set the index to the asteroid name
 lth_eph_df = lth_eph_df.set_index('ast_name')
+# keep track of which clone is assigned to what simulation
 clone_assignments = list()
 
 # assign particles to simulation
@@ -85,5 +86,5 @@ cln_asg_df.to_hdf('clone_assignments.h5', 'clone_assignments', mode='w')
 
 # Write out the simulations
 for sim_no, sim in enumerate(sim_list):
-    file_name = f'./luthera_sims/luther_sim_{sim_no:04}.bin'
+    file_name = f'./luthera_sims/luthera_sim_{sim_no:05}.bin'
     sim.save(file_name)

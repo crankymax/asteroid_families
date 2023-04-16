@@ -73,6 +73,7 @@ def retrieve_ephemeris(asteroids):
 
 def convert_dy2yr(eph_df):
     dy2yr = 365.25 / (2 * np.pi)
+
     eph_df['VX'] = eph_df['VX'] * dy2yr
     eph_df['VY'] = eph_df['VY'] * dy2yr
     eph_df['VZ'] = eph_df['VZ'] * dy2yr
