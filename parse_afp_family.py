@@ -35,7 +35,7 @@ Column 6: Family ID (a number of the lowest numbered family member)
 """
 
 
-def parse_fam_families(target_family='1303'):
+def parse_fam_families(target_family):
     ast_cols = [(0, 11), (14, 20), (23, 34), (37, 48), (51, 62), (64, 72)]
 
     asteroids: list[list] = []
@@ -64,6 +64,22 @@ Column 4: Number of identified members
 Column 5: Main belt region (IB = Inner belt; MB = Middle belt; OB = Outer belt)
 """
 
+
+def get_family_df(family_name="1303"):
+    asteroids, target_family = parse_fam_families(family_name)
+
+    afp_fam_cols = ['ast_name', 'abs_mag', 'a_P', 'e_P', 'sineI_P', 'family_id']
+    afp_fam_df = pd.DataFrame(asteroids, columns=afp_fam_cols)
+    afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(
+        pd.to_numeric)
+    afp_fam_df.to_hdf('afp_families.h5', 'afp_families', mode='w')
+
+    lth_fam_df = pd.DataFrame(target_family, columns=afp_fam_cols)
+    lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(
+        pd.to_numeric)
+    lth_fam_df.to_hdf('luthera_family.h5', 'luthera_family', mode='w')
+
+    return target_family
 
 
 

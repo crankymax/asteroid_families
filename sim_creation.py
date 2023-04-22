@@ -1,16 +1,15 @@
 import rebound
 
 
-def create_rebound_sims(number_required=4096):
+def create_rebound_sims(active_list, number_required):
     sim = rebound.Simulation()
     date = 'JD2451544.5'
     # Abbrev  Venus
-    planet_list = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-    sim.add(planet_list, date=date)
+    sim.add(active_list, date=date)
     sim.integrator = "whfast"
     sim.particles[3].m = 5.21e-10  # Ceres Mass in Solar masses
     sim.dt = sim.particles[1].P / 30  # 1/30 of the innermost planetary period
-    sim.N_active = len(planet_list)
+    sim.N_active = len(active_list)
     sim.testparticle_type = 1
     sim.move_to_com()
 

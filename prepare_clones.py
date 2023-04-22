@@ -1,10 +1,10 @@
 import math
-from pathlib import Path
 import itertools
+import os
 
 import pandas as pd
-from horizons_api import retrieve_ephemeris, convert_dy2yr
-from parse_afp_family import parse_fam_families
+from horizons_api import get_family_eph
+from parse_afp_family import get_family_df
 from sim_creation import create_rebound_sims
 
 
@@ -18,73 +18,77 @@ def add_level(inputs, levels):
     return next_level
 
 
-asteroids, luthera_family = parse_fam_families()
-afp_fam_cols = ['ast_name', 'abs_mag', 'a_P', 'e_P', 'sineI_P', 'family_id']
-afp_fam_df = pd.DataFrame(asteroids, columns=afp_fam_cols)
-afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(pd.to_numeric)
-afp_fam_df.to_hdf('afp_families.h5', 'afp_families', mode='w')
+def create_sims(asteroid_ephem, output_dir, active_list):
+    # produce a new column for each of the clones as values +- sigma
+    asteroid_ephem['Xcp'] = asteroid_ephem['X'] * (1 + asteroid_ephem['sX'])
+    asteroid_ephem['Ycp'] = asteroid_ephem['Y'] * (1 + asteroid_ephem['sY'])
+    asteroid_ephem['Zcp'] = asteroid_ephem['Z'] * (1 + asteroid_ephem['sZ'])
+    asteroid_ephem['Xcm'] = asteroid_ephem['X'] * (1 - asteroid_ephem['sX'])
+    asteroid_ephem['Ycm'] = asteroid_ephem['Y'] * (1 - asteroid_ephem['sY'])
+    asteroid_ephem['Zcm'] = asteroid_ephem['Z'] * (1 - asteroid_ephem['sZ'])
+    asteroid_ephem['VXcp'] = asteroid_ephem['VX'] * (1 + asteroid_ephem['sVX'])
+    asteroid_ephem['VYcp'] = asteroid_ephem['VY'] * (1 + asteroid_ephem['sVY'])
+    asteroid_ephem['VZcp'] = asteroid_ephem['VZ'] * (1 + asteroid_ephem['sVZ'])
+    asteroid_ephem['VXcm'] = asteroid_ephem['VX'] * (1 - asteroid_ephem['sVX'])
+    asteroid_ephem['VYcm'] = asteroid_ephem['VY'] * (1 - asteroid_ephem['sVY'])
+    asteroid_ephem['VZcm'] = asteroid_ephem['VZ'] * (1 - asteroid_ephem['sVZ'])
 
-lth_fam_df = pd.DataFrame(luthera_family, columns=afp_fam_cols)
-lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(pd.to_numeric)
-lth_fam_df.to_hdf('luthera_family.h5', 'luthera_family', mode='w')
+    # create the clones array
+    ephem_types = [['Xcp', 'Xcm'], ['Ycp', 'Ycm'], ['Zcp', 'Zcm'],
+                   ['VXcp', 'VXcm'], ['VYcp', 'VYcm'], ['VZcp', 'VZcm']]
+    # Combine the clones into a list
+    particles = [list(parts) for parts in itertools.product(*ephem_types)]
+    # Now add the original asteroid to the list
+    particles.append(['X', 'Y', 'Z', 'VX', 'VY', 'VZ'])
 
-if not Path('luthera_eph.h5').exists():
-    luther_ephemeris = retrieve_ephemeris(luthera_family)
-    cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
-    lth_eph_df = pd.DataFrame(luther_ephemeris, columns=cols_df)
-    convert_dy2yr(lth_eph_df)
-    # Save a copy
-    lth_eph_df.to_hdf('luthera_eph.h5', 'luthera_eph', mode='w')
-else:
-    lth_eph_df = pd.read_hdf('luthera_eph.h5', 'luthera_eph')
+    # Determine the number of sims
+    clones_per_sim = 5
+    sim_numbers = math.ceil((len(asteroid_ephem)*len(particles)) / clones_per_sim)
+    sim_list = create_rebound_sims(active_list, sim_numbers)
 
-# produce a new column for each of the clones as values +- sigma
-lth_eph_df['Xcp'] = lth_eph_df['X'] * (1 + lth_eph_df['sX'])
-lth_eph_df['Ycp'] = lth_eph_df['Y'] * (1 + lth_eph_df['sY'])
-lth_eph_df['Zcp'] = lth_eph_df['Z'] * (1 + lth_eph_df['sZ'])
-lth_eph_df['Xcm'] = lth_eph_df['X'] * (1 - lth_eph_df['sX'])
-lth_eph_df['Ycm'] = lth_eph_df['Y'] * (1 - lth_eph_df['sY'])
-lth_eph_df['Zcm'] = lth_eph_df['Z'] * (1 - lth_eph_df['sZ'])
-lth_eph_df['VXcp'] = lth_eph_df['VX'] * (1 + lth_eph_df['sVX'])
-lth_eph_df['VYcp'] = lth_eph_df['VY'] * (1 + lth_eph_df['sVY'])
-lth_eph_df['VZcp'] = lth_eph_df['VZ'] * (1 + lth_eph_df['sVZ'])
-lth_eph_df['VXcm'] = lth_eph_df['VX'] * (1 - lth_eph_df['sVX'])
-lth_eph_df['VYcm'] = lth_eph_df['VY'] * (1 - lth_eph_df['sVY'])
-lth_eph_df['VZcm'] = lth_eph_df['VZ'] * (1 - lth_eph_df['sVZ'])
+    # Set the index to the asteroid name
+    lth_eph_df = asteroid_ephem.set_index('ast_name')
+    # keep track of which clone is assigned to what simulation
+    clone_assignments = list()
 
-# create the particles array
-ephem_types = [['Xcp', 'Xcm'], ['Ycp', 'Ycm'], ['Zcp', 'Zcm'],
-               ['VXcp', 'VXcm'], ['VYcp', 'VYcm'], ['VZcp', 'VZcm']]
-# Combine the clones into a list
-particles = [list(parts) for parts in itertools.product(*ephem_types)]
-# Now add the original particle to the list
-particles.append(['X', 'Y', 'Z', 'VX', 'VY', 'VZ'])
+    # assign particles to simulation
+    for a_n, asteroid in enumerate(lth_eph_df.index):
+        for p_n, particle_cols in enumerate(particles):
+            particle_vals = lth_eph_df.loc[asteroid][particle_cols]
+            assigned_sim_no = ((p_n + (a_n*len(particles))) % sim_numbers)
+            sim = sim_list[assigned_sim_no]
+            sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals.iloc[2],
+                    vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals.iloc[5])
+            clone_assignments.append([assigned_sim_no, len(sim.particles), asteroid, particle_cols])
 
-# Determine the number of sims
-clones_per_sim = 5
-sim_number = math.ceil((len(lth_eph_df)*len(particles)) / clones_per_sim)
-sim_list = create_rebound_sims(sim_number)
+    cln_asg_cols = ['sim_no', 'particle_number', 'ast_name', 'particle_types']
+    cln_asg_df = pd.DataFrame(clone_assignments, columns=cln_asg_cols)
+    cln_asg_df.to_hdf(f'{output_dir}/clone_assignments.h5', 'clone_assignments', mode='w')
 
-# Set the index to the asteroid name
-lth_eph_df = lth_eph_df.set_index('ast_name')
-# keep track of which clone is assigned to what simulation
-clone_assignments = list()
+    # Write out the simulations
+    for sim_no, sim in enumerate(sim_list):
+        file_name = f'{output_dir}/sim_{sim_no:05}.bin'
+        sim.save(file_name)
 
-# assign particles to simulation
-for a_n, asteroid in enumerate(lth_eph_df.index):
-    for p_n, particle_cols in enumerate(particles):
-        particle_vals = lth_eph_df.loc[asteroid][particle_cols]
-        assigned_sim_no = ((p_n + (a_n*len(particles))) % sim_number)
-        sim = sim_list[assigned_sim_no]
-        sim.add(m=0.0, x=particle_vals.iloc[0], y=particle_vals.iloc[1], z=particle_vals.iloc[2],
-                vx=particle_vals.iloc[3], vy=particle_vals.iloc[4], vz=particle_vals.iloc[5])
-        clone_assignments.append([assigned_sim_no, len(sim.particles), asteroid, particle_cols])
 
-cln_asg_cols = ['sim_no', 'particle_number', 'ast_name', 'particle_types']
-cln_asg_df = pd.DataFrame(clone_assignments, columns=cln_asg_cols)
-cln_asg_df.to_hdf('clone_assignments.h5', 'clone_assignments', mode='w')
+if __name__ == '__main__':
+    # Do we want to add active asteroid  426/P ???
+    # COMMAND = 'DES=1003609;NOFRAG;'
+    """$$SOE
+    2451544.500000000, A.D. 2000-Jan-01 00:00:00.0000,  2.334269053942694E+00, -1.808322981199081E+00,  6.292178749934185E-01,  4.428832441905231E-03,  8.923607089146576E-03,  1.921127626386464E-03,  1.48642185E-05,  2.32441520E-05,  6.25526758E-06,  7.55661843E-08,  4.71045977E-08,  2.07506493E-08,
+    $$EOE
+    """
 
-# Write out the simulations
-for sim_no, sim in enumerate(sim_list):
-    file_name = f'./luthera_sims/luthera_sim_{sim_no:05}.bin'
-    sim.save(file_name)
+    # Extract the family
+    luthera_family = get_family_df("1303")
+    # Retrieve the ephemeris
+    lth_eph_df = get_family_eph(luthera_family)
+    # create the sim files
+    active_list = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    out_dir = "luthera_7p_5t_c"
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+
+    create_sims(lth_eph_df, out_dir, active_list)
+
+

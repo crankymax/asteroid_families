@@ -1,6 +1,8 @@
 import requests
 import numpy as np
 
+from pathlib import Path
+import pandas as pd
 
 def is_float(element: any) -> bool:
     try:
@@ -80,3 +82,18 @@ def convert_dy2yr(eph_df):
     eph_df['sVX'] = eph_df['sVX'] * dy2yr
     eph_df['sVY'] = eph_df['sVY'] * dy2yr
     eph_df['sVZ'] = eph_df['sVZ'] * dy2yr
+
+
+def get_family_eph(target_family):
+    if not Path('luthera_eph.h5').exists():
+        target_ephemeris = retrieve_ephemeris(target_family)
+        cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
+        trgt_eph_df = pd.DataFrame(target_ephemeris, columns=cols_df)
+        convert_dy2yr(trgt_eph_df)
+
+        # Save a copy
+        trgt_eph_df.to_hdf('luthera_eph.h5', 'luthera_eph', mode='w')
+    else:
+        trgt_eph_df = pd.read_hdf('luthera_eph.h5', 'luthera_eph')
+
+    return trgt_eph_df
