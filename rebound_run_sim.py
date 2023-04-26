@@ -12,13 +12,14 @@ import time
 import warnings
 
 
-def run_sim(input_dir, sim_no, run_length) -> dict:
+def run_sim(base_dir, sim_no, run_length) -> dict:
+    input_dir = f'{base_dir}input'
     sim_file = f'{input_dir}sim_{sim_no:05}.bin'
     sim = rebound.Simulation(sim_file)
 
     # setup log directory
     run_time = datetime.today().strftime('%Y%m%d_%H%M')
-    log_dir = f'{input_dir}results/'
+    log_dir = f'{base_dir}results/'
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
 
@@ -27,7 +28,7 @@ def run_sim(input_dir, sim_no, run_length) -> dict:
 
     # Create evenly spaced integrations every run_length/1000
     log_time = int(run_length/1.0e3)
-    vals: int = 9
+    vals: int = 11
     # Integrate for run_length years
     times = np.linspace(log_time, run_length * 2 * np.pi, log_time)
     start = time.time()
@@ -49,11 +50,13 @@ def run_sim(input_dir, sim_no, run_length) -> dict:
                 run_values[ti][i][6] = p.a
                 run_values[ti][i][7] = p.e
                 run_values[ti][i][8] = p.inc
+                run_values[ti][i][9] = p.omega
+                run_values[ti][i][10] = p.Omega
 
     sim.save(f'{log_dir}sim_{sim_no:05}_fin.bin')
     print(f"{run_time}-{sim_no} {run_length:.1e} length:{time.time()-start}")
 
-    with h5.File(f"{log_dir}/pvals_{run_time}_{sim_no:02}.h5", 'w') as run_log:
+    with h5.File(f"{log_dir}pvals_{run_time}_{sim_no:05}.h5", 'w') as run_log:
         run_log.attrs['simulation'] = sim_no
         run_log.attrs['int_length'] = run_length
         run_log.attrs['clock_time'] = time.time() - start

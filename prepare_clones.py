@@ -84,11 +84,15 @@ if __name__ == '__main__':
     # Retrieve the ephemeris
     lth_eph_df = get_family_eph(luthera_family)
     # create the sim files
-    active_list = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+
+    active_list_c = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    active_list_v = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    active_list_c = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+
     out_dir = "luthera_7p_5t_c"
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
-    create_sims(lth_eph_df, out_dir, active_list)
+    create_sims(lth_eph_df, out_dir, active_list_c)
 
 
