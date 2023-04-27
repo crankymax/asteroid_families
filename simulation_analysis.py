@@ -15,7 +15,7 @@ a_max = 4.0
 e_min = 0.0
 e_max = 0.3
 # inclination i
-i_min = -0.4
+i_min = 0.0
 i_max = 0.4
 
 # indices in the particles array
@@ -26,13 +26,13 @@ I = 8
 ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
 
 
-def simulation_analysis(clone_assignments, results_files, active_bodies=8):
+def simulation_analysis(particle_assignments, results_files, active_bodies=8):
     integration_time = None
     time_taken = []
     escaped_asteroids = dict()
     particles_simulated = 0
 
-    particles_assigned = pd.read_hdf(clone_assignments)
+    particles_assigned = pd.read_hdf(particle_assignments)
 
     for pv_file in glob.glob(results_files):
         with h5.File(pv_file, 'r') as simulation_log:
@@ -86,8 +86,7 @@ if __name__ == '__main__':
     print(sys.argv)
     clone_assignments = sys.argv[1]
     results_dir = sys.argv[2]
-    escaped_c, simulated_c, avg_runtime = simulation_analysis(clone_assignments,
-                                                 results_dir)
+    escaped_c, simulated_c, avg_runtime = simulation_analysis(clone_assignments, results_dir)
     print(f"Escaped asteroids:{len(escaped_c)} Total simulated {simulated_c} "
           f"\nFraction escaped:{len(escaped_c) / simulated_c}")
     print(f'Average run time {avg_runtime}')

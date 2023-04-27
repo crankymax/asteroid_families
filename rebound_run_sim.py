@@ -13,7 +13,7 @@ import warnings
 
 
 def run_sim(base_dir, sim_no, run_length) -> dict:
-    input_dir = f'{base_dir}input'
+    input_dir = f'{base_dir}inputs/'
     sim_file = f'{input_dir}sim_{sim_no:05}.bin'
     sim = rebound.Simulation(sim_file)
 
@@ -74,5 +74,5 @@ if __name__ == '__main__':
         run_sim(inp_dir, sim_no, run_length)
         exit(0)
     else:
-        res = run_sim('./luthera_7p_5t_c/', 0, 1.0e5)
+        res = run_sim('../asteroid_data/sim_data/luthera_7p_5t_c/', 0, 1.0e5)
 

@@ -87,12 +87,12 @@ if __name__ == '__main__':
 
     active_list_c = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
     active_list_v = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-    active_list_c = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    active_list_vc = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
 
-    out_dir = "luthera_7p_5t_c"
+    out_dir = "../asteroid_data/sim_data/luthera_7p_5t_v"
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
-    create_sims(lth_eph_df, out_dir, active_list_c)
-
+    create_sims(lth_eph_df, out_dir, active_list_v)
+    print(f"Completed creating:{active_list_v}")
 
