@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from horizons_api import get_family_eph
 from parse_afp_family import get_family_df
-from sim_creation import create_rebound_sims
+from sim_creation import create_whfast_sim, create_mercurious_sim, copy_sim
 
 
 def add_level(inputs, levels):
@@ -18,7 +18,7 @@ def add_level(inputs, levels):
     return next_level
 
 
-def create_sims(asteroid_ephem, output_dir, active_list):
+def create_clones(asteroid_ephem, output_dir, sim_file, clones_per_sim=5):
     # produce a new column for each of the clones as values +- sigma
     asteroid_ephem['Xcp'] = asteroid_ephem['X'] * (1 + asteroid_ephem['sX'])
     asteroid_ephem['Ycp'] = asteroid_ephem['Y'] * (1 + asteroid_ephem['sY'])
@@ -41,15 +41,15 @@ def create_sims(asteroid_ephem, output_dir, active_list):
     # Now add the original asteroid to the list
     particles.append(['X', 'Y', 'Z', 'VX', 'VY', 'VZ'])
 
-    # Determine the number of sims
-    clones_per_sim = 5
-    sim_numbers = math.ceil((len(asteroid_ephem)*len(particles)) / clones_per_sim)
-    sim_list = create_rebound_sims(active_list, sim_numbers)
-
     # Set the index to the asteroid name
     lth_eph_df = asteroid_ephem.set_index('ast_name')
     # keep track of which clone is assigned to what simulation
     clone_assignments = list()
+
+    # Determine the number of sims
+    sim_numbers = math.ceil((len(asteroid_ephem) * len(particles)) / clones_per_sim)
+    # generate the sims
+    sim_list = copy_sim(sim_file, sim_numbers)
 
     # assign particles to simulation
     for a_n, asteroid in enumerate(lth_eph_df.index):
@@ -84,15 +84,27 @@ if __name__ == '__main__':
     # Retrieve the ephemeris
     lth_eph_df = get_family_eph(luthera_family)
     # create the sim files
-
-    active_list_c = ['Sun', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
     active_list_v = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
     active_list_vc = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
 
-    out_dir = "../asteroid_data/sim_data/luthera_7p_5t_v"
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
+    ceres = False
+    whfast = False
+    part_per_sim = 5
 
-    create_sims(lth_eph_df, out_dir, active_list_v)
-    print(f"Completed creating:{active_list_v}")
+    if not ceres:
+        active_list = active_list_v
+        mass_particles = {}
+        out_dir = "../asteroid_data/sim_data/mv_5/inputs"
+    else:
+        active_list = active_list_vc
+        mass_particles = {4: 5.21e-10}
+        out_dir = "../asteroid_data/sim_data/mvc_5/inputs"
 
+    if whfast:
+        base_sim = create_whfast_sim(active_list, mass_particles)
+    else:
+        base_sim = create_mercurious_sim(active_list, mass_particles)
+
+    create_clones(lth_eph_df, out_dir, base_sim, part_per_sim)
+
+    print(f"Completed creating:{active_list}")

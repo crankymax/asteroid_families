@@ -3,6 +3,6 @@
 *.h5
 
 /luthera_sims/
-
+/.idea/
 /run_logs/
 /.ipynb_checkpoints/

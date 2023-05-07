@@ -34,12 +34,14 @@ def run_sim(base_dir, sim_no, run_length) -> dict:
     start = time.time()
 
     run_values = np.zeros((log_time, n_particles, vals))
+    sim_energy_values = np.zeros(log_time)
     # Capture warning messages (WHFast timestep too large)
     print(f"{run_time}+{sim_no} {run_length:.1e}")
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         for ti, t in enumerate(times):
             sim.integrate(t, exact_finish_time=0)
+            sim_energy_values[ti] = sim.calculate_energy()
             for i, p in enumerate(sim.particles[sim.N_active:]):
                 run_values[ti][i][0] = p.x
                 run_values[ti][i][1] = p.y
@@ -61,6 +63,7 @@ def run_sim(base_dir, sim_no, run_length) -> dict:
         run_log.attrs['int_length'] = run_length
         run_log.attrs['clock_time'] = time.time() - start
         run_log.create_dataset('integration_time_values', data=times)
+        run_log.create_dataset('sim_energy_values', data=sim_energy_values)
         run_log.create_dataset('test_particle_values', data=run_values)
 
 
@@ -74,5 +77,5 @@ if __name__ == '__main__':
         run_sim(inp_dir, sim_no, run_length)
         exit(0)
     else:
-        res = run_sim('../asteroid_data/sim_data/luthera_7p_5t_c/', 0, 1.0e5)
+        res = run_sim('../asteroid_data/sim_data/mc_3/', 0, 1.0e5)
 

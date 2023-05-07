@@ -82,6 +82,12 @@ def get_family_df(family_name="1303"):
     return target_family
 
 
+def calculate_diameter(mag_h, p_v=0.0387):
+    # D= 1329×10−H/5 ×1/√pv
+    # Assuming a common geometric albedo p_v = 0.0387
+    # 0.0387 and a diameter of 85.08 kilometers based on an absolute magnitude
+    # of 9.5
+    return (1329 * 10**(-mag_h/5)) * (p_v ** (-0.5))
 
 
 

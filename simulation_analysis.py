@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from scipy import stats
+import datetime as datetime
 
 # boundary values
 # semi major axis a
@@ -13,10 +14,10 @@ a_min = 2.0
 a_max = 4.0
 # eccentricity e
 e_min = 0.0
-e_max = 0.3
+e_max = 0.5
 # inclination i
 i_min = 0.0
-i_max = 0.4
+i_max = 0.8
 
 # indices in the particles array
 A = 6
@@ -26,12 +27,12 @@ I = 8
 ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
 
 
-def simulation_analysis(particle_assignments, results_files, active_bodies=8):
+def simulation_analysis(particle_assignments, results_files, summary_files):
     integration_time = None
     time_taken = []
-    escaped_asteroids = dict()
+    escaped_asteroid_data = list()
     particles_simulated = 0
-
+    escaped_asteroids = set()
     particles_assigned = pd.read_hdf(particle_assignments)
 
     for pv_file in glob.glob(results_files):
@@ -60,19 +61,28 @@ def simulation_analysis(particle_assignments, results_files, active_bodies=8):
                 for sim_particle in np.unique(outside[1]):
                     # TODO: Check to see if this is a null particle in the array
                     try:
-                        ast_name, vec_list = sim_particles[sim_particles['particle_number'] ==
-                                                           (sim_particle + active_bodies + 1)][['ast_name', 'particle_types']].values[0]
+                        ast_name, vec_list, particle_number = sim_particles.iloc[[sim_particle]][['ast_name',
+                                                                        'particle_types', 'particle_number']].values[0]
                     except IndexError:
                         print(f"We got an unallocated particle we'll skip file:{pv_file} particle:{sim_particle} "
                               f"parameter:{param_index}")
                         continue
+                    escaped_asteroids.add(f"{ast_name}{''.join(vec_list)}")
+                    # we need the first item index for this sim_particle
+                    escape_index = (np.where(outside[1] == sim_particle))[0][0]
+                    escaped_asteroid_data.append([ast_name, ''.join(vec_list),
+                                                  simulation_log.attrs['simulation'],
+                                                  particle_number, param_index,
+                                                  part_values[outside[0][escape_index], outside[1][escape_index],
+                                                  param_index],
+                                                  int_values[outside[0][escape_index]]])
 
-                    part_id = f"{ast_name}_{''.join(vec_list)}"
-                    if part_id not in escaped_asteroids:
-                        escaped_asteroids[part_id] = list()
-                    escaped_asteroids[part_id].append(tuple([param_index]))
+    escaped_ast_cols = ['ast_name', 'vectors', 'sim_no', 'particle_number', 'parameter', 'parameter_value',
+                        'integration_year']
+    escaped_ast_df = pd.DataFrame(escaped_asteroid_data, columns=escaped_ast_cols)
+    escaped_ast_df.to_hdf(f"{summary_files}escaped_asteroids", 'escaped_asteroids', mode='w')
 
-    return escaped_asteroids, particles_simulated, np.mean(time_taken)
+    return len(escaped_asteroids), particles_simulated, np.mean(time_taken)
 
 
 def collect_statistics(part_values):
@@ -86,7 +96,8 @@ if __name__ == '__main__':
     print(sys.argv)
     clone_assignments = sys.argv[1]
     results_dir = sys.argv[2]
-    escaped_c, simulated_c, avg_runtime = simulation_analysis(clone_assignments, results_dir)
-    print(f"Escaped asteroids:{len(escaped_c)} Total simulated {simulated_c} "
-          f"\nFraction escaped:{len(escaped_c) / simulated_c}")
-    print(f'Average run time {avg_runtime}')
+    summary_dir = sys.argv[3]
+    escaped_c, simulated_c, avg_runtime = simulation_analysis(clone_assignments, results_dir, summary_dir)
+    print(f"Escaped asteroids:{escaped_c} Total simulated {simulated_c} "
+          f"\nFraction escaped:{escaped_c/simulated_c}")
+    print(f'Average run time {datetime.timedelta(seconds=avg_runtime)}')
