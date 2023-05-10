@@ -5,11 +5,11 @@ import datetime
 
 gantt = pd.DataFrame([
     dict(Task="Retrieve Luthera family \nasteroid data", Start=1, Duration=1),
-    dict(Task="Write Literature Review", Start=2, Duration=7),
+    dict(Task="Write Literature Review", Start=1, Duration=7),
     dict(Task="Generate the orbital data for \neach asteroid from the \nNASA Horizons system",
          Start=3, Duration=2),
-    dict(Task="Create test-particle cloud", Start=2, Duration=2),
-    dict(Task="Determine REBOUND config", Start=3, Duration=3),
+    dict(Task="Create test-particle cloud", Start=4, Duration=2),
+    dict(Task="Determine REBOUND config", Start=3, Duration=8),
     dict(Task="Create HPC jobs and software \nto log data", Start=6, Duration=3),
     dict(Task="Write Project Proposal", Start=10, Duration=3),
     dict(Task="Create scripts to analyse logs \nand extract summary information", Start=8, Duration=10),

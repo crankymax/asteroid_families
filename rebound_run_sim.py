@@ -29,19 +29,22 @@ def run_sim(base_dir, sim_no, run_length) -> dict:
     # Create evenly spaced integrations every run_length/1000
     log_time = int(run_length/1.0e3)
     vals: int = 11
+
     # Integrate for run_length years
     times = np.linspace(log_time, run_length * 2 * np.pi, log_time)
     start = time.time()
 
     run_values = np.zeros((log_time, n_particles, vals))
     sim_energy_values = np.zeros(log_time)
-    # Capture warning messages (WHFast timestep too large)
+    sim_megno = np.zeros(log_time)
+    # Capture warning messages (e.g. WHFast timestep too large)
     print(f"{run_time}+{sim_no} {run_length:.1e}")
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         for ti, t in enumerate(times):
             sim.integrate(t, exact_finish_time=0)
             sim_energy_values[ti] = sim.calculate_energy()
+            sim_megno[ti] = sim.calculate_megno()
             for i, p in enumerate(sim.particles[sim.N_active:]):
                 run_values[ti][i][0] = p.x
                 run_values[ti][i][1] = p.y
@@ -58,12 +61,13 @@ def run_sim(base_dir, sim_no, run_length) -> dict:
     sim.save(f'{log_dir}sim_{sim_no:05}_fin.bin')
     print(f"{run_time}-{sim_no} {run_length:.1e} length:{time.time()-start}")
 
-    with h5.File(f"{log_dir}pvals_{run_time}_{sim_no:05}.h5", 'w') as run_log:
+    with h5.File(f"{log_dir}pvals_{sim_no:05}.h5", 'w') as run_log:
         run_log.attrs['simulation'] = sim_no
         run_log.attrs['int_length'] = run_length
         run_log.attrs['clock_time'] = time.time() - start
         run_log.create_dataset('integration_time_values', data=times)
         run_log.create_dataset('sim_energy_values', data=sim_energy_values)
+        run_log.create_dataset('sim_megno_values', data=sim_megno)
         run_log.create_dataset('test_particle_values', data=run_values)
 
 

@@ -89,12 +89,12 @@ if __name__ == '__main__':
 
     ceres = False
     whfast = False
-    part_per_sim = 5
+    part_per_sim = 3
 
     if not ceres:
         active_list = active_list_v
         mass_particles = {}
-        out_dir = "../asteroid_data/sim_data/mv_5/inputs"
+        out_dir = "../asteroid_data/sim_data/mv_3/inputs"
     else:
         active_list = active_list_vc
         mass_particles = {4: 5.21e-10}
