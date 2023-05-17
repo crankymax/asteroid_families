@@ -8,7 +8,7 @@ def parse_tro_families():
     asteroids: list[list] = []
     luthera_family: list[list] = []
 
-    ast_input = open('../asteroid_data/all_tro.members.txt')
+    ast_input = open('../../asteroid_data/all_tro.members.txt')
 
     for asteroid in ast_input:
         if asteroid[0] == '%':
@@ -35,13 +35,13 @@ Column 6: Family ID (a number of the lowest numbered family member)
 """
 
 
-def parse_fam_families(target_family):
+def parse_fam_families(data_dir, target_family):
     ast_cols = [(0, 11), (14, 20), (23, 34), (37, 48), (51, 62), (64, 72)]
 
     asteroids: list[list] = []
     luthera_family: list[list] = []
 
-    ast_input = open('../asteroid_data/afp.fam.members.txt')
+    ast_input = open(data_dir)
 
     for asteroid in ast_input:
         ast_details = []
@@ -65,19 +65,19 @@ Column 5: Main belt region (IB = Inner belt; MB = Middle belt; OB = Outer belt)
 """
 
 
-def get_family_df(family_name="1303"):
-    asteroids, target_family = parse_fam_families(family_name)
+def get_family_df(data_dir, family_name="1303"):
+    asteroids, target_family = parse_fam_families(data_dir, family_name)
 
     afp_fam_cols = ['ast_name', 'abs_mag', 'a_P', 'e_P', 'sineI_P', 'family_id']
     afp_fam_df = pd.DataFrame(asteroids, columns=afp_fam_cols)
     afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = afp_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(
         pd.to_numeric)
-    afp_fam_df.to_hdf('afp_families.h5', 'afp_families', mode='w')
+    afp_fam_df.to_hdf(f'{data_dir}afp_families.h5', 'afp_families', mode='w')
 
     lth_fam_df = pd.DataFrame(target_family, columns=afp_fam_cols)
     lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']] = lth_fam_df[['abs_mag', 'a_P', 'e_P', 'sineI_P']].apply(
         pd.to_numeric)
-    lth_fam_df.to_hdf('luthera_family.h5', 'luthera_family', mode='w')
+    lth_fam_df.to_hdf(f'{data_dir}luthera_family.h5', 'luthera_family', mode='w')
 
     return target_family
 

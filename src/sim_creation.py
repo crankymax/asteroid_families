@@ -5,10 +5,11 @@ def create_rebound_sim(active_list, manual_masses, particle_period):
     sim = rebound.Simulation()
     date = 'JD2451544.5'
     sim.add(active_list, date=date)
-    # TODO: Create a parameter that allows masses to be passed in
     for p_num, mass in manual_masses.items():
-        sim.particles[p_num].m = mass  # Ceres Mass in Solar masses
-    sim.dt = sim.particles[particle_period].P / 30  # 1/30 of a planetary period
+        # Set Mass in Solar masses if horizons doesn't have it
+        sim.particles[p_num].m = mass
+    # 1/30 of the innermost planetary period
+    sim.dt = sim.particles[particle_period].P / 30
     sim.N_active = len(active_list)
     sim.testparticle_type = 1
     sim.move_to_com()

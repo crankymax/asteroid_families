@@ -84,16 +84,18 @@ def convert_dy2yr(eph_df):
     eph_df['sVZ'] = eph_df['sVZ'] * dy2yr
 
 
-def get_family_eph(target_family):
-    if not Path('luthera_eph.h5').exists():
+def get_family_eph(data_dir, target_family):
+    family_eph = f'{data_dir}luthera_eph.h5'
+
+    if not Path(family_eph).exists():
         target_ephemeris = retrieve_ephemeris(target_family)
         cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
         trgt_eph_df = pd.DataFrame(target_ephemeris, columns=cols_df)
         convert_dy2yr(trgt_eph_df)
 
         # Save a copy
-        trgt_eph_df.to_hdf('luthera_eph.h5', 'luthera_eph', mode='w')
+        trgt_eph_df.to_hdf(family_eph, 'luthera_eph', mode='w')
     else:
-        trgt_eph_df = pd.read_hdf('luthera_eph.h5', 'luthera_eph')
+        trgt_eph_df = pd.read_hdf(family_eph, 'luthera_eph')
 
     return trgt_eph_df

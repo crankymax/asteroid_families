@@ -10,14 +10,14 @@ import datetime as datetime
 
 # boundary values
 # semi major axis a
-a_min = 2.0
-a_max = 4.0
+a_min = 1.8
+a_max = 3.95
 # eccentricity e
 e_min = 0.0
-e_max = 0.5
+e_max = 0.34
 # inclination i
 i_min = 0.0
-i_max = 0.8
+i_max = 0.55
 
 # indices in the particles array
 A = 6
@@ -27,7 +27,7 @@ I = 8
 ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
 
 
-def simulation_analysis(particle_assignments, results_files, summary_files):
+def simulation_analysis(particle_assignments: str, results_files: str, summary_files: str) -> tuple:
     integration_time = None
     time_taken = []
     escaped_asteroid_data = list()
@@ -50,8 +50,6 @@ def simulation_analysis(particle_assignments, results_files, summary_files):
             int_values = simulation_log['integration_time_values'][()]
             part_values = simulation_log['test_particle_values'][()]
             particles_simulated += part_values.shape[1]
-
-            # collect_statistics(part_values)
 
             # Check for particles that are under or over limits
             for param_index, limits in ind_limits.items():
