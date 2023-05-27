@@ -4,6 +4,9 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 
+eph_cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
+
+
 def is_float(element: any) -> bool:
     try:
         float(element)
@@ -89,8 +92,7 @@ def get_family_eph(data_dir, target_family):
 
     if not Path(family_eph).exists():
         target_ephemeris = retrieve_ephemeris(target_family)
-        cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
-        trgt_eph_df = pd.DataFrame(target_ephemeris, columns=cols_df)
+        trgt_eph_df = pd.DataFrame(target_ephemeris, columns=eph_cols_df)
         convert_dy2yr(trgt_eph_df)
 
         # Save a copy

@@ -3,7 +3,7 @@ import itertools
 import os
 
 import pandas as pd
-from horizons_api import get_family_eph
+from horizons_api import get_family_eph, convert_dy2yr
 from parse_afp_family import get_family_df
 from sim_creation import create_whfast_sim, create_mercurious_sim, copy_sim
 
@@ -85,25 +85,31 @@ if __name__ == '__main__':
     2451544.500000000, A.D. 2000-Jan-01 00:00:00.0000,  2.334269053942694E+00, -1.808322981199081E+00,  6.292178749934185E-01,  4.428832441905231E-03,  8.923607089146576E-03,  1.921127626386464E-03,  1.48642185E-05,  2.32441520E-05,  6.25526758E-06,  7.55661843E-08,  4.71045977E-08,  2.07506493E-08,
     $$EOE
     """
+    P_426 = {'ast_name': 'P_426', 'X': 2.334269053942694E+00, 'Y': -1.808322981199081E+00, 'Z': 6.292178749934185E-01,
+             'VX': 4.428832441905231E-03, 'VY': 8.923607089146576E-03, 'VZ': 1.921127626386464E-03,
+             'sX': 1.48642185E-05, 'sY': 2.32441520E-05, 'sZ': 6.25526758E-06,
+             'sVX': 7.55661843E-08, 'sVY': 4.71045977E-08, 'sVZ': 2.07506493E-08}
+
+    convert_dy2yr(P_426)
 
     # Extract the family
     luthera_family = get_family_df('../asteroid_data/afp.fam.members.txt', "1303")
     # Retrieve the ephemeris
     lth_eph_df = get_family_eph('../asteroid_data/', luthera_family)
-    # create the sim files
-    active_list_v = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-    active_list_vc = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    lth_eph_df.loc[len(lth_eph_df)] = [P_426[x] for x in ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ',
+                                                          'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']]
 
+    # create the sim files
     ceres = True
     whfast = False
     part_per_sim = 3
 
     if not ceres:
-        active_list = active_list_v
+        active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
         mass_particles = {}
         out_dir = f"../asteroid_data/sim_data/mv_{part_per_sim}/inputs"
     else:
-        active_list = active_list_vc
+        active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
         mass_particles = {4: 5.21e-10}
         out_dir = f"../asteroid_data/sim_data/mvc_{part_per_sim}/inputs"
 
