@@ -113,6 +113,13 @@ def particle_simulation(sim_config):
 
     walltime_start = time.time()
     walltime_cutoff = sim_config['max_walltime'] * 3600  # Convert hours to seconds
+    # Give the code 30 minutes to write out the log files and simulations
+    # Tried being smart, lost 7 days due to getting cut off as the data was written :(
+    if walltime_cutoff > 3600:
+        safety_margin = 3600 / 2
+    else:
+        safety_margin = walltime_cutoff * 0.05
+
     start_index = sim_config['start_index']
     step_lengths = 0
 
@@ -137,7 +144,6 @@ def particle_simulation(sim_config):
                 run_values[ti][i][9] = p.omega
                 run_values[ti][i][10] = p.Omega
 
-            safety_margin = (step_lengths/(ti-start_index+1))*10
             # Check walltime
             if (time.time() - walltime_start) > (walltime_cutoff - safety_margin):
                 return ti
@@ -152,6 +158,13 @@ def base_simulation(sim_config):
 
     walltime_start = time.time()
     walltime_cutoff = sim_config['max_walltime'] * 3600  # Convert hours to seconds
+    # Give the code 30 minutes to write out the log files and simulations
+    # Tried being smart, lost 7 days due to getting cut off as the data was written :(
+    if walltime_cutoff > 3600:
+        safety_margin = 3600 / 2
+    else:
+        safety_margin = walltime_cutoff * 0.05
+
     start_index = sim_config['start_index']
     step_lengths = 0
 
@@ -176,7 +189,6 @@ def base_simulation(sim_config):
                 run_values[ti][i][9] = p.omega
                 run_values[ti][i][10] = p.Omega
 
-            safety_margin = (step_lengths / (ti - start_index + 1)) * 10
             # Check walltime
             if (time.time() - walltime_start) > (walltime_cutoff - safety_margin):
                 return ti
