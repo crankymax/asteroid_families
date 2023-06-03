@@ -37,7 +37,9 @@ def simulation_analysis(particle_assignments: str, results_files: str, summary_f
 
     for pv_file in glob.glob(results_files):
         with h5.File(pv_file, 'r') as simulation_log:
-            sim_particles = particles_assigned[particles_assigned['sim_no'] == simulation_log.attrs['simulation']]
+            if simulation_log.attrs['simulation'] == 'actives':
+                continue
+            sim_particles = particles_assigned[particles_assigned['sim_no'] == int(simulation_log.attrs['simulation'])]
             if integration_time and integration_time != simulation_log.attrs['int_length']:
                 print(
                     f"Overall integration_time:{integration_time}, this {pv_file}:{simulation_log.attrs['int_length']}")
@@ -48,7 +50,7 @@ def simulation_analysis(particle_assignments: str, results_files: str, summary_f
 
             # Load the arrays
             int_values = simulation_log['integration_time_values'][()]
-            part_values = simulation_log['test_particle_values'][()]
+            part_values = simulation_log['particle_values'][()]
             particles_simulated += part_values.shape[1]
 
             # Check for particles that are under or over limits
@@ -78,7 +80,7 @@ def simulation_analysis(particle_assignments: str, results_files: str, summary_f
     escaped_ast_cols = ['ast_name', 'vectors', 'sim_no', 'particle_number', 'parameter', 'parameter_value',
                         'integration_year']
     escaped_ast_df = pd.DataFrame(escaped_asteroid_data, columns=escaped_ast_cols)
-    escaped_ast_df.to_hdf(f"{summary_files}escaped_asteroids", 'escaped_asteroids', mode='w')
+    escaped_ast_df.to_hdf(f"{summary_files}escaped_asteroids.h5", 'escaped_asteroids', mode='w')
 
     return len(escaped_asteroids), particles_simulated, np.mean(time_taken)
 

@@ -1,14 +1,8 @@
 from pathlib import Path
-from shutil import rmtree
 
 import unittest
 
-import itertools
-import datetime
-
-import pandas as pd
-
-from rebound_run_sim import sim_particle_system, sim_base_system
+from rebound_run_sim import run_sim
 
 
 class TestSimulation(unittest.TestCase):
@@ -28,37 +22,34 @@ class TestSimulation(unittest.TestCase):
             if path.is_file():
                 path.unlink()
 
-
     def test_one_shot(self):
-        sim_no = 0
-        run_length = 1.0e5
+        sim_no = '0'
+        run_length = 1.0e6
         max_walltime = 1.0
-        stop_index = sim_particle_system(self.inp_dir, sim_no, run_length, max_walltime)
+        stop_index = run_sim(self.inp_dir, sim_no, run_length, max_walltime)
         assert stop_index
 
     def test_two_shots(self):
-        sim_no = 0
-        run_length = 1.0e5
-        max_walltime = 15 * (1/3600)
-        stop_index = sim_particle_system(self.inp_dir, sim_no, run_length, max_walltime)
+        sim_no = '0'
+        run_length = 1.0e6
+        max_walltime = 100 * (1/3600)
+        stop_index = run_sim(self.inp_dir, sim_no, run_length, max_walltime)
         assert not stop_index
-        stop_index = sim_particle_system(self.inp_dir, sim_no, run_length, max_walltime)
+        stop_index = run_sim(self.inp_dir, sim_no, run_length, max_walltime)
         assert stop_index
 
-    def test_one_shot_base(self):
-        sim_no = 0
-        run_length = 1.0e5
+    def test_one_shot_actives(self):
+        run_length = 1.0e6
         max_walltime = 1.0
-        stop_index = sim_base_system(self.inp_dir, run_length, max_walltime)
+        stop_index = run_sim(self.inp_dir, 'actives', run_length, max_walltime)
         assert stop_index
 
-    def test_two_shots_base(self):
-        sim_no = 0
-        run_length = 1.0e5
-        max_walltime = 10 * (1/3600)
-        stop_index = sim_base_system(self.inp_dir, run_length, max_walltime)
+    def test_two_shots_actives(self):
+        run_length = 1.0e6
+        max_walltime = 100 * (1/3600)
+        stop_index = run_sim(self.inp_dir, 'actives', run_length, max_walltime)
         assert not stop_index
-        stop_index = sim_base_system(self.inp_dir, run_length, max_walltime)
+        stop_index = run_sim(self.inp_dir, 'actives', run_length, max_walltime)
         assert stop_index
 
 

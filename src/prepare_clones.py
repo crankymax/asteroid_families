@@ -94,9 +94,9 @@ if __name__ == '__main__':
     convert_dy2yr(P_426)
 
     # Extract the family
-    luthera_family = get_family_df('../asteroid_data/afp.fam.members.txt', "1303")
+    luthera_family = get_family_df('../../asteroid_data/afp.fam.members.txt', "1303")
     # Retrieve the ephemeris
-    lth_eph_df = get_family_eph('../asteroid_data/', luthera_family)
+    lth_eph_df = get_family_eph('../../asteroid_data/', luthera_family)
     lth_eph_df.loc[len(lth_eph_df)] = [P_426[x] for x in ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ',
                                                           'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']]
 
@@ -108,11 +108,11 @@ if __name__ == '__main__':
     if not ceres:
         active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
         mass_particles = {}
-        out_dir = f"../asteroid_data/sim_data/mv_{part_per_sim}/inputs"
+        out_dir = f"../../asteroid_data/sim_data/mv_{part_per_sim}/inputs"
     else:
         active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
         mass_particles = {4: 5.21e-10}
-        out_dir = f"../asteroid_data/sim_data/mvc_{part_per_sim}/inputs"
+        out_dir = f"../../asteroid_data/sim_data/mvc_{part_per_sim}/inputs"
 
     if whfast:
         base_sim = create_whfast_sim(active_list, mass_particles)
