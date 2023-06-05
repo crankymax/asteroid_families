@@ -41,8 +41,8 @@ def simulation_analysis(particle_assignments: str, results_files: str, summary_f
                 continue
             sim_particles = particles_assigned[particles_assigned['sim_no'] == int(simulation_log.attrs['simulation'])]
             if integration_time and integration_time != simulation_log.attrs['int_length']:
-                print(
-                    f"Overall integration_time:{integration_time}, this {pv_file}:{simulation_log.attrs['int_length']}")
+                print(f"Overall integration_time:{integration_time}, "
+                      f"this {pv_file}:{simulation_log.attrs['int_length']}")
             else:
                 integration_time = simulation_log.attrs['int_length']
 

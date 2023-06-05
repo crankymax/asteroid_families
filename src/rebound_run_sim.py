@@ -108,14 +108,13 @@ def particle_simulation(sim_config, actives=False):
     walltime_start = time.time()
     walltime_cutoff = sim_config['max_walltime'] * 3600  # Convert hours to seconds
     # Give the code 30 minutes to write out the log files and simulations
-    # Tried being smart, lost 7 days due to getting cut off as the data was written :(
+    # Tried being smart, lost 7 days due to process getting terminated as the data was written :(
     if walltime_cutoff > 3600:
         safety_margin = 3600 / 2
     else:
         safety_margin = walltime_cutoff * 0.05
 
     start_index = sim_config['start_index']
-    step_lengths = 0
     if actives:
         start_particle = 1
     else:
@@ -128,7 +127,6 @@ def particle_simulation(sim_config, actives=False):
             start_step = time.time()
             sim.integrate(times[ti], exact_finish_time=0)
             sim_energy_values[ti] = sim.calculate_energy()
-            step_lengths += time.time() - start_step
             for i, p in enumerate(sim.particles[start_particle:]):
                 run_values[ti][i][0] = p.x
                 run_values[ti][i][1] = p.y
