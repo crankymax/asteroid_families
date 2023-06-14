@@ -11,15 +11,22 @@ import numpy as np
 import time
 import warnings
 
+restart = False
+
+def prun_sim(params) -> bool:
+    base_dir, sim_number, int_length, max_walltime = params
+    run_sim(base_dir, sim_number, int_length, max_walltime)
+
 
 def run_sim(base_dir, sim_number, int_length, max_walltime=168.0) -> bool:
+    config_nm = base_dir.split('/')[-2]
     start = time.time()
     if sim_number.isdigit():
         sim_desig = f'{int(sim_number):05}'
     else:
         sim_desig = sim_number
 
-    print(f"{sim_desig} {int_length:.1e}")
+    print(f"+{config_nm} {sim_desig} {int_length:.1e}")
 
     sim_config = initialise_config(base_dir, int_length, sim_desig)
     sim_config['max_walltime'] = max_walltime
@@ -28,7 +35,7 @@ def run_sim(base_dir, sim_number, int_length, max_walltime=168.0) -> bool:
 
     store_config(base_dir, stop_index, sim_config)
 
-    print(f"{sim_desig} {int_length:.1e} stop_index:{stop_index} "
+    print(f"-{config_nm} {sim_desig} {int_length:.1e} stop_index:{stop_index} "
           f"Duration:{timedelta(seconds=time.time()-start)}")
 
     return stop_index == -1
@@ -41,7 +48,7 @@ def initialise_config(base_dir, int_length, sim_desig):
     sim_config['log_file'] = f"{log_dir}pvals_{sim_desig}.h5"
     input_dir = f'{base_dir}inputs/'
     # Check for a current log file
-    if os.path.exists(sim_config['log_file']):
+    if os.path.exists(sim_config['log_file']) and restart:
         print(f"Restarting simulation {sim_desig}")
         # We have a log file so crack it open
         with h5.File(sim_config['log_file'], 'r') as run_log:

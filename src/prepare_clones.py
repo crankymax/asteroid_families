@@ -101,18 +101,18 @@ if __name__ == '__main__':
                                                           'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']]
 
     # create the sim files
-    ceres = True
+    ceres = False
     whfast = False
     part_per_sim = 3
 
     if not ceres:
-        active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+        active_list = ['Sun', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
         mass_particles = {}
-        out_dir = f"../../asteroid_data/sim_data/mv_{part_per_sim}/inputs"
+        out_dir = f"../../asteroid_data/sim_data/m_pm6_{part_per_sim}/inputs"
     else:
-        active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-        mass_particles = {4: 5.21e-10}
-        out_dir = f"../../asteroid_data/sim_data/mvc_{part_per_sim}/inputs"
+        active_list = ['Sun', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+        mass_particles = {2: 5.21e-10}
+        out_dir = f"../../asteroid_data/sim_data/mc_pm6_{part_per_sim}/inputs"
 
     if whfast:
         base_sim = create_whfast_sim(active_list, mass_particles)

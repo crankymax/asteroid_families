@@ -1,8 +1,9 @@
 from pathlib import Path
-
+import itertools
+from rebound.interruptible_pool import InterruptiblePool
 import unittest
 
-from rebound_run_sim import run_sim
+from rebound_run_sim import run_sim, prun_sim
 
 
 class TestSimulation(unittest.TestCase):
@@ -51,6 +52,16 @@ class TestSimulation(unittest.TestCase):
         assert not stop_index
         stop_index = run_sim(self.inp_dir, 'actives', run_length, max_walltime)
         assert stop_index
+
+    def test_timings(self):
+        params = list(itertools.product(['../../asteroid_data/sim_data/m_pm6_3/',
+                                         '../../asteroid_data/sim_data/mc_pm6_3/'],
+                                        [str(sim_no) for sim_no in range(6)],
+                                        [1.e6, 2.5e6, 5.e6, 7.5e6, 1.e7],
+                                        [2]))
+        pool = InterruptiblePool(processes=3)
+        res = pool.map(prun_sim, params)
+        print(res)
 
 
 if __name__ == '__main__':

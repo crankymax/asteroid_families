@@ -28,21 +28,21 @@ def check_input_files(parent_dir):
 
 def create_pbs_job(job_range, parent_dir):
     # Open a pipe to the qsub command.
-    p = Popen("./qsub", shell=True, stdin=PIPE, stdout=PIPE)
+    p = Popen("qsub", shell=True, stdin=PIPE, stdout=PIPE)
 
     # Customize your options here
     job_string = f"""#!/bin/bash -l
-        #PBS -N mvc3_particles_test
+        #PBS -N mc_pm6_prod
         
-        #PBS -q albus
+        #PBS -q default
         #PBS -l select=1:ncpus=1:mem=2gb
-        #PBS -l walltime=168:00:00
+        #PBS -l walltime=72:00:00
         
         # Set the job array size
         #PBS -J {job_range}
         
         #PBS -P 0201-BWALKER
-        #PBS -o asteroid_sim/mvc_3/console/
+        #PBS -o asteroid_sim/mc_pm6_3/console/
         #PBS -j oe
         
         # Change to the python rebound module
@@ -52,14 +52,14 @@ def create_pbs_job(job_range, parent_dir):
         cd {parent_dir}
         
         # python command line
-        python rebound_run_sim.py $PBS_ARRAY_INDEX 1.0e9 ./mvc_3/ 168.0
+        python rebound_run_sim.py $PBS_ARRAY_INDEX 1.0e9 ./mc_pm6_3/ 72.0
         """
 
     # Send job_string to qsub
     print('submitting')
     p.stdin.write(job_string.encode())
     batch_code = p.communicate()[0]
-    print(f"batch_code {batch_code} cwd {os.getcwd()}")
+    print(f"batch_code {batch_code} ")
 
 
 if __name__ == '__main__':
