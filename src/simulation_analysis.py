@@ -62,7 +62,8 @@ def simulation_analysis(particle_assignments: str, results_files: str, summary_f
                     # TODO: Check to see if this is a null particle in the array
                     try:
                         ast_name, vec_list, particle_number = sim_particles.iloc[[sim_particle]][['ast_name',
-                                                                        'particle_types', 'particle_number']].values[0]
+                                                                                                  'particle_types',
+                                                                                                  'particle_number']].values[0]
                     except IndexError:
                         print(f"We got an unallocated particle we'll skip file:{pv_file} particle:{sim_particle} "
                               f"parameter:{param_index}")

@@ -10,7 +10,7 @@ class TestSimulation(unittest.TestCase):
     inp_dir = '../../asteroid_data/sim_data/mvc_3/'
 
     def setUp(self):
-        # Setup the test directory
+        # Set up the test directory
         # Remove any files in the results directory
         results_dir = Path(self.inp_dir).joinpath('results')
         for path in results_dir.glob("*"):
