@@ -11,15 +11,15 @@ import numpy as np
 import time
 import warnings
 
-restart = False
+
 
 def prun_sim(params) -> bool:
     base_dir, sim_number, int_length, max_walltime = params
     run_sim(base_dir, sim_number, int_length, max_walltime)
 
 
-def run_sim(base_dir, sim_number, int_length, max_walltime=168.0) -> bool:
-    config_nm = base_dir.split('/')[-2]
+def run_sim(proj_dir, sim_number, int_length, max_walltime=168.0) -> bool:
+    config_nm = proj_dir.split('/')[-2]
     start = time.time()
     if sim_number.isdigit():
         sim_desig = f'{int(sim_number):05}'
@@ -28,12 +28,12 @@ def run_sim(base_dir, sim_number, int_length, max_walltime=168.0) -> bool:
 
     print(f"+{config_nm} {sim_desig} {int_length:.1e}")
 
-    sim_config = initialise_config(base_dir, int_length, sim_desig)
+    sim_config = initialise_config(proj_dir, int_length, sim_desig)
     sim_config['max_walltime'] = max_walltime
     stop_index = particle_simulation(sim_config, (sim_desig == 'actives'))
     sim_config['clock_time'] = time.time() - start + sim_config['clock_time']
 
-    store_config(base_dir, stop_index, sim_config)
+    store_config(proj_dir, stop_index, sim_config)
 
     print(f"-{config_nm} {sim_desig} {int_length:.1e} stop_index:{stop_index} "
           f"Duration:{timedelta(seconds=time.time()-start)}")
@@ -41,14 +41,16 @@ def run_sim(base_dir, sim_number, int_length, max_walltime=168.0) -> bool:
     return stop_index == -1
 
 
-def initialise_config(base_dir, int_length, sim_desig):
+def initialise_config(proj_dir, int_length, sim_desig):
+    vals: int = 11
+
     sim_config = dict()
     # setup log file
-    log_dir = f'{base_dir}results/'
+    log_dir = f'{proj_dir}results/'
     sim_config['log_file'] = f"{log_dir}pvals_{sim_desig}.h5"
-    input_dir = f'{base_dir}inputs/'
+    input_dir = f'{proj_dir}inputs/'
     # Check for a current log file
-    if os.path.exists(sim_config['log_file']) and restart:
+    if os.path.exists(sim_config['log_file']):
         print(f"Restarting simulation {sim_desig}")
         # We have a log file so crack it open
         with h5.File(sim_config['log_file'], 'r') as run_log:
@@ -59,8 +61,36 @@ def initialise_config(base_dir, int_length, sim_desig):
             sim_config['times'] = run_log['integration_time_values'][()]
             sim_config['sim_energy_values'] = run_log['sim_energy_values'][()]
             sim_config['particle_values'] = run_log['particle_values'][()]
+
+        # Check the stop index -1 == completed sim
+        if sim_config['start_index'] != 0 and sim_config['int_length'] != int_length:
+            # We have an unfinished simulation and an extension of integration time
+            raise RuntimeError("We can't restart a simulation and extend the integration time")
+        elif sim_config['start_index'] == 0 and sim_config['int_length'] != int_length:
+            # The int_length from the config differs to the passed value
+            # extend the run
+            old_times = sim_config['times']
+            log_step = old_times[1] - old_times[0]
+            # We start from the last integration time, and step until past the integration year
+            new_times = np.arange(old_times[-1]+log_step, (int_length*2*np.pi)+log_step, log_step)
+            sim_config['times'] = np.concatenate([old_times, new_times], axis=0)
+            # We start at the first time in the new time value array
+            sim_config['start_index'] = len(old_times)
+            # Set the new time length
+            sim_config['int_length'] = int_length
+            # We need to match the number of particles from the old log
+            particle_dims = sim_config['particle_values'].shape
+            new_particle_log = np.zeros((len(new_times), particle_dims[1], vals))
+            # Join the arrays
+            sim_config['particle_values'] = np.concatenate([sim_config['particle_values'], new_particle_log], axis=0)
+            # Extend the energy array
+            sim_config['sim_energy_values'] = np.concatenate([sim_config['sim_energy_values'],
+                                                              np.zeros(len(new_times))],
+                                                             axis=0)
+
         sim_file = f'{log_dir}sim_{sim_desig}_fin.bin'
         sim_config['sim'] = rebound.Simulation(sim_file)
+
     else:
         sim_file = f'{input_dir}sim_{sim_desig}.bin'
         sim_config['sim'] = rebound.Simulation(sim_file)
@@ -75,14 +105,12 @@ def initialise_config(base_dir, int_length, sim_desig):
         else:
             n_particles = sim_config['sim'].N_active - 1
 
-        # Create evenly spaced integrations log times
+        # Create evenly spaced integration log times
         exp = floor(log10(int_length))
         if exp >= 6:
             log_time = int(int_length / pow(10, exp-4))
         else:
             log_time = int(int_length / 1.0e3)
-
-        vals: int = 11
 
         # Integrate for run_length years
         sim_config['times'] = np.linspace(log_time, int_length * 2 * np.pi, log_time)
