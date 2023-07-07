@@ -8,6 +8,10 @@ import pandas as pd
 from scipy import stats
 import datetime as datetime
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+mpl.use('Agg')
+
 # boundary values
 # semi major axis a
 a_min = 1.8
@@ -27,7 +31,7 @@ I = 8
 ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
 
 
-def simulation_analysis(particle_assignments: str, results_files: str, summary_files: str) -> tuple:
+def scan_logs(particle_assignments: str, results_files: str, summary_files: str) -> tuple:
     integration_time = None
     time_taken = []
     escaped_asteroid_data = list()
@@ -93,12 +97,61 @@ def collect_statistics(part_values):
     return desc_stats, deciles
 
 
+def plot_orbital_escapes(summary_files: str):
+    xlabel_time = 'Years after start of simulation [$10^8 ~ yr$]'
+    # Read the escaped asteroids file
+    ea_mmc3 = pd.read_hdf(f'{summary_files}/escaped_asteroids.h5')
+    # Get a list of all asteroids that have >= 65% of clones go missing
+    ea_grouped1 = ea_mmc3[ea_mmc3.parameter == 6][['ast_name', 'vectors']].groupby('ast_name').size()
+    asteroid_track_names = ea_grouped1[ea_grouped1 > (65 * 0.75)].index
+
+    escaped_ast_sim = ea_mmc3[ea_mmc3.ast_name.isin(asteroid_track_names)][['ast_name', 'sim_no', 'particle_number']]
+    escaped_ast_sim = escaped_ast_sim.drop_duplicates()
+    for ast_name in asteroid_track_names:
+        ast_array = escaped_ast_sim.loc[escaped_ast_sim.ast_name == ast_name].values
+        print(ast_name)
+        int_values = None
+        plot_vals = np.zeros([10000, len(ast_array), 11])
+
+        # plt.style.use('fivethirtyeight')
+        fig = plt.figure(figsize=(8, 8))
+        fig.suptitle(f'Orbital Evolution for clones of asteroid {ast_name} ')
+        gs = fig.add_gridspec(3, hspace=0)
+        (ax1, ax2, ax3) = gs.subplots(sharex=True)
+
+        for p_no, (_, sim_file, particle_no) in enumerate(ast_array):
+            with h5.File(f"../../asteroid_data/mc_pm6_3/fawkes_pvals/pvals_{sim_file:05}.h5", 'r') as sim_log:
+                # Unpack the H5
+                # Store the first array of time steps (they're duplicated across H5's)
+                if int_values is None:
+                    int_values = sim_log['integration_time_values'][()]
+                # Copy the values for the particle
+                part_values = sim_log['particle_values'][()]
+                # print(1,part_values[:,particle_no-8,:].shape)
+                # print(2,plot_vals[:,p_no,:].shape)
+                plot_vals[:, p_no, :] = part_values[:, particle_no - 8, :]
+                ax1.scatter(int_values[:], plot_vals[:, p_no, 6], s=5, marker='o')
+                ax2.scatter(int_values[:], plot_vals[:, p_no, 7], s=5, marker='o')
+                ax3.scatter(int_values[:], plot_vals[:, p_no, 8], s=5, marker='o')
+
+        plt.xlabel(xlabel_time)
+        ax1.set_ylabel("Semi-major axis $a$ [AU]")
+        ax1.label_outer()
+        ax2.set_ylabel("Eccentricity $e$ []")
+        ax2.label_outer()
+        ax3.set_ylabel("Inclination $i$ [radian]")
+        plt.savefig(f"../../asteroid_data/mc_pm6_3/plots/orb_evol_{ast_name.replace(' ', '_')}.png", dpi=300)
+        plt.close()
+
+    print('Completed')
+
+
 if __name__ == '__main__':
     print(sys.argv)
     clone_assignments = sys.argv[1]
     results_dir = sys.argv[2]
     summary_dir = sys.argv[3]
-    escaped_c, simulated_c, avg_runtime = simulation_analysis(clone_assignments, results_dir, summary_dir)
+    escaped_c, simulated_c, avg_runtime = scan_logs(clone_assignments, results_dir, summary_dir)
     print(f"Escaped asteroids:{escaped_c} Total simulated {simulated_c} "
           f"\nFraction escaped:{escaped_c/simulated_c}")
     print(f'Average run time {datetime.timedelta(seconds=avg_runtime)}')

@@ -5,7 +5,9 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 
 
-def create_run_jobs(start_sim, end_sim, array_size, parent_dir):
+def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
+    queue = 'default'
+
     current_sim = start_sim
     while current_sim < end_sim:
         if (current_sim + array_size-1) < end_sim:
@@ -14,11 +16,17 @@ def create_run_jobs(start_sim, end_sim, array_size, parent_dir):
         else:
             job_range = f"{current_sim}-{end_sim}"
             current_sim = end_sim
-        create_pbs_job(job_range, parent_dir)
+
+        if queue == 'albus':
+            queue = 'default'
+        else:
+            queue = 'albus'
+
+        create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue)
 
 
-def check_input_files(parent_dir):
-    input_dir = Path(parent_dir, 'inputs')
+def check_input_files(project_dir):
+    input_dir = Path(project_dir, 'inputs')
     for pv_file in input_dir.glob('sim_*.bin'):
         if 'actives' in str(pv_file):
             print(pv_file)
@@ -26,17 +34,17 @@ def check_input_files(parent_dir):
             print(f"Groot to go:{pv_file}")
 
 
-def create_pbs_job(job_range, parent_dir):
+def create_pbs_job(job_range, parent_dir, walltime="72:00:00", int_time='1.0e9', queue='default', cmd='qsub'):
     # Open a pipe to the qsub command.
-    p = Popen("qsub", shell=True, stdin=PIPE, stdout=PIPE)
+    p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE)
 
     # Customize your options here
     job_string = f"""#!/bin/bash -l
         #PBS -N mc_pm6_prod
         
-        #PBS -q default
+        #PBS -q {queue}
         #PBS -l select=1:ncpus=1:mem=2gb
-        #PBS -l walltime=72:00:00
+        #PBS -l walltime={walltime}
         
         # Set the job array size
         #PBS -J {job_range}
@@ -52,7 +60,7 @@ def create_pbs_job(job_range, parent_dir):
         cd {parent_dir}
         
         # python command line
-        python rebound_run_sim.py $PBS_ARRAY_INDEX 1.0e9 ./mc_pm6_3/ 72.0
+        python rebound_run_sim.py $PBS_ARRAY_INDEX {int_time} ./mc_pm6_3/ {walltime}
         """
 
     # Send job_string to qsub

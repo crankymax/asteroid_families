@@ -12,10 +12,9 @@ import time
 import warnings
 
 
-
 def prun_sim(params) -> bool:
     base_dir, sim_number, int_length, max_walltime = params
-    run_sim(base_dir, sim_number, int_length, max_walltime)
+    return run_sim(base_dir, sim_number, int_length, max_walltime)
 
 
 def run_sim(proj_dir, sim_number, int_length, max_walltime=168.0) -> bool:

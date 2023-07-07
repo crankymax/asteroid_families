@@ -1,5 +1,13 @@
 import pandas as pd
+from urllib import request
 
+def download_afp_data(project_dir):
+    # TODO Work in progress
+    # link to family summary data
+    family_summary_URL = 'http://asteroids.matf.bg.ac.rs/fam/families/afp.fam.summary'
+    request.urlretrieve(family_summary_URL, project_dir + '/afp_fam_members.txt')
+    family_members_URL = 'http://asteroids.matf.bg.ac.rs/fam/families/afp.fam.members'
+    request.urlretrieve(family_members_URL, project_dir + '/afp_fam_summary.txt')
 
 def parse_tro_families():
     ast_cols = [(0, 9), (12, 16), (21, 24), (26, 38), (40, 45), (46, 55), (57, 60), (71, 75), (77, 86),
