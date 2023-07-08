@@ -6,7 +6,10 @@ from subprocess import Popen, PIPE
 
 
 def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
-    queue = 'default'
+    # ['default', '24'], ['default', '160'],
+    queues = [['default', '72']]
+    q_i = 0
+    q_l = len(queues)
 
     current_sim = start_sim
     while current_sim < end_sim:
@@ -17,24 +20,12 @@ def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
             job_range = f"{current_sim}-{end_sim}"
             current_sim = end_sim
 
-        if queue == 'albus':
-            queue = 'default'
-        else:
-            queue = 'albus'
-
-        create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue)
+        queue = queues[(q_i % q_l)]
+        q_i += 1
+        create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
 
 
-def check_input_files(project_dir):
-    input_dir = Path(project_dir, 'inputs')
-    for pv_file in input_dir.glob('sim_*.bin'):
-        if 'actives' in str(pv_file):
-            print(pv_file)
-        else:
-            print(f"Groot to go:{pv_file}")
-
-
-def create_pbs_job(job_range, parent_dir, walltime="72:00:00", int_time='1.0e9', queue='default', cmd='qsub'):
+def create_pbs_job(job_range, parent_dir, walltime="72", int_time='1.0e9', queue='default', cmd='qsub'):
     # Open a pipe to the qsub command.
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE)
 
@@ -44,7 +35,7 @@ def create_pbs_job(job_range, parent_dir, walltime="72:00:00", int_time='1.0e9',
         
         #PBS -q {queue}
         #PBS -l select=1:ncpus=1:mem=2gb
-        #PBS -l walltime={walltime}
+        #PBS -l walltime={walltime}:00:00
         
         # Set the job array size
         #PBS -J {job_range}
@@ -64,7 +55,7 @@ def create_pbs_job(job_range, parent_dir, walltime="72:00:00", int_time='1.0e9',
         """
 
     # Send job_string to qsub
-    print('submitting')
+    print(f'submitting {job_range} to {queue} for {walltime}')
     p.stdin.write(job_string.encode())
     batch_code = p.communicate()[0]
     print(f"batch_code {batch_code} ")

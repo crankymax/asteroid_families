@@ -31,15 +31,15 @@ I = 8
 ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
 
 
-def scan_logs(particle_assignments: str, results_files: str, summary_files: str) -> tuple:
+def scan_logs(particle_assignments_file: str, results_dir: str, project_dir: str) -> tuple:
     integration_time = None
     time_taken = []
     escaped_asteroid_data = list()
     particles_simulated = 0
     escaped_asteroids = set()
-    particles_assigned = pd.read_hdf(particle_assignments)
+    particles_assigned = pd.read_hdf(particle_assignments_file)
 
-    for pv_file in glob.glob(results_files):
+    for pv_file in glob.glob(f"{results_dir}/*.h5"):
         with h5.File(pv_file, 'r') as simulation_log:
             if simulation_log.attrs['simulation'] == 'actives':
                 continue
@@ -85,7 +85,7 @@ def scan_logs(particle_assignments: str, results_files: str, summary_files: str)
     escaped_ast_cols = ['ast_name', 'vectors', 'sim_no', 'particle_number', 'parameter', 'parameter_value',
                         'integration_year']
     escaped_ast_df = pd.DataFrame(escaped_asteroid_data, columns=escaped_ast_cols)
-    escaped_ast_df.to_hdf(f"{summary_files}escaped_asteroids.h5", 'escaped_asteroids', mode='w')
+    escaped_ast_df.to_hdf(f"{project_dir}escaped_asteroids.h5", 'escaped_asteroids', mode='w')
 
     return len(escaped_asteroids), particles_simulated, np.mean(time_taken)
 
@@ -97,10 +97,10 @@ def collect_statistics(part_values):
     return desc_stats, deciles
 
 
-def plot_orbital_escapes(summary_files: str):
+def plot_orbital_escapes(results_dir, project_dir: str):
     xlabel_time = 'Years after start of simulation [$10^8 ~ yr$]'
     # Read the escaped asteroids file
-    ea_mmc3 = pd.read_hdf(f'{summary_files}/escaped_asteroids.h5')
+    ea_mmc3 = pd.read_hdf(f'{project_dir}escaped_asteroids.h5')
     # Get a list of all asteroids that have >= 65% of clones go missing
     ea_grouped1 = ea_mmc3[ea_mmc3.parameter == 6][['ast_name', 'vectors']].groupby('ast_name').size()
     asteroid_track_names = ea_grouped1[ea_grouped1 > (65 * 0.75)].index
@@ -111,28 +111,23 @@ def plot_orbital_escapes(summary_files: str):
         ast_array = escaped_ast_sim.loc[escaped_ast_sim.ast_name == ast_name].values
         print(ast_name)
         int_values = None
-        plot_vals = np.zeros([10000, len(ast_array), 11])
 
-        # plt.style.use('fivethirtyeight')
         fig = plt.figure(figsize=(8, 8))
         fig.suptitle(f'Orbital Evolution for clones of asteroid {ast_name} ')
         gs = fig.add_gridspec(3, hspace=0)
         (ax1, ax2, ax3) = gs.subplots(sharex=True)
 
         for p_no, (_, sim_file, particle_no) in enumerate(ast_array):
-            with h5.File(f"../../asteroid_data/mc_pm6_3/fawkes_pvals/pvals_{sim_file:05}.h5", 'r') as sim_log:
+            with h5.File(f"{results_dir}pvals_{sim_file:0>5}.h5", 'r') as sim_log:
                 # Unpack the H5
                 # Store the first array of time steps (they're duplicated across H5's)
                 if int_values is None:
                     int_values = sim_log['integration_time_values'][()]
                 # Copy the values for the particle
                 part_values = sim_log['particle_values'][()]
-                # print(1,part_values[:,particle_no-8,:].shape)
-                # print(2,plot_vals[:,p_no,:].shape)
-                plot_vals[:, p_no, :] = part_values[:, particle_no - 8, :]
-                ax1.scatter(int_values[:], plot_vals[:, p_no, 6], s=5, marker='o')
-                ax2.scatter(int_values[:], plot_vals[:, p_no, 7], s=5, marker='o')
-                ax3.scatter(int_values[:], plot_vals[:, p_no, 8], s=5, marker='o')
+                ax1.scatter(int_values[:], part_values[:, particle_no - 8, A], s=5, marker='o')
+                ax2.scatter(int_values[:], part_values[:, particle_no - 8, E], s=5, marker='o')
+                ax3.scatter(int_values[:], part_values[:,  particle_no - 8, I], s=5, marker='o')
 
         plt.xlabel(xlabel_time)
         ax1.set_ylabel("Semi-major axis $a$ [AU]")
@@ -140,7 +135,7 @@ def plot_orbital_escapes(summary_files: str):
         ax2.set_ylabel("Eccentricity $e$ []")
         ax2.label_outer()
         ax3.set_ylabel("Inclination $i$ [radian]")
-        plt.savefig(f"../../asteroid_data/mc_pm6_3/plots/orb_evol_{ast_name.replace(' ', '_')}.png", dpi=300)
+        plt.savefig(f"{project_dir}plots/orb_evol_{ast_name.replace(' ', '_')}.png", dpi=300)
         plt.close()
 
     print('Completed')
@@ -150,8 +145,9 @@ if __name__ == '__main__':
     print(sys.argv)
     clone_assignments = sys.argv[1]
     results_dir = sys.argv[2]
-    summary_dir = sys.argv[3]
-    escaped_c, simulated_c, avg_runtime = scan_logs(clone_assignments, results_dir, summary_dir)
+    project_dir = sys.argv[3]
+    escaped_c, simulated_c, avg_runtime = scan_logs(clone_assignments, results_dir, project_dir)
     print(f"Escaped asteroids:{escaped_c} Total simulated {simulated_c} "
           f"\nFraction escaped:{escaped_c/simulated_c}")
     print(f'Average run time {datetime.timedelta(seconds=avg_runtime)}')
+    plot_orbital_escapes(results_dir, project_dir)
