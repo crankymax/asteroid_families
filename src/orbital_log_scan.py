@@ -19,7 +19,7 @@ a_max = 3.95
 # eccentricity e
 e_min = 0.0
 e_max = 0.34
-# inclination i
+# inclination i (radians)
 i_min = 0.0
 i_max = 0.55
 
@@ -125,6 +125,8 @@ def plot_orbital_escapes(results_dir, project_dir: str):
                     int_values = sim_log['integration_time_values'][()]
                 # Copy the values for the particle
                 part_values = sim_log['particle_values'][()]
+                # TODO We need to truncate the series when A hits 0
+                # part_values[:, particle_no - 8, A].indexof(0.0)
                 ax1.scatter(int_values[:], part_values[:, particle_no - 8, A], s=5, marker='o')
                 ax2.scatter(int_values[:], part_values[:, particle_no - 8, E], s=5, marker='o')
                 ax3.scatter(int_values[:], part_values[:,  particle_no - 8, I], s=5, marker='o')

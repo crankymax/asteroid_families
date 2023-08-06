@@ -25,7 +25,7 @@ def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
         create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
 
 
-def create_pbs_job(job_range, parent_dir, walltime="72", int_time='1.0e9', queue='default', cmd='qsub'):
+def create_pbs_job(job_range, parent_dir, walltime="72", int_time='3.0e9', queue='default', cmd='qsub'):
     # Open a pipe to the qsub command.
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE)
 
@@ -63,4 +63,4 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='1.0e9', queue
 
 if __name__ == '__main__':
     print(sys.argv)
-    create_run_jobs(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), 'asteroid_sim/')
+    create_run_jobs(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])

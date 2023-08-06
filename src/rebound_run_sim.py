@@ -12,6 +12,8 @@ import time
 import warnings
 
 
+# This function allows the simulations to be started in a
+# InterruptiblePool on a machine that isn't using PBS.
 def prun_sim(params) -> bool:
     base_dir, sim_number, int_length, max_walltime = params
     return run_sim(base_dir, sim_number, int_length, max_walltime)
@@ -154,11 +156,10 @@ def particle_simulation(sim_config, actives=False):
     else:
         start_particle = sim.N_active
 
-    # Capture warning messages (e.g. WHFast timestep too large)
+    # Capture warning messages
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         for ti in range(start_index, len(times)):
-            start_step = time.time()
             sim.integrate(times[ti], exact_finish_time=0)
             sim_energy_values[ti] = sim.calculate_energy()
             for i, p in enumerate(sim.particles[start_particle:]):
