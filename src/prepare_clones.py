@@ -57,20 +57,24 @@ def create_clones(asteroid_ephem, output_dir, sim_file, clones_per_sim=5):
 
     cln_asg_cols = ['ast_name', 'particle_types', 'sim_no', 'particle_number']
     cln_asg_df = pd.DataFrame(clone_assignments, columns=cln_asg_cols)
-    cln_asg_df.to_hdf(f'{output_dir}/clone_assignments.h5', 'clone_assignments', mode='w')
+    cln_asg_file = output_dir / 'clone_assignments.h5'
+    cln_asg_df.to_hdf(cln_asg_file.resolve(), 'clone_assignments', mode='w')
 
     # Write out the simulations
     for sim_no, sim in enumerate(sim_list):
-        file_name = f'{output_dir}/sim_{sim_no:05}.bin'
-        sim.save(file_name)
+        file_name = output_dir / f'sim_{sim_no:05}.bin'
+        sim.save(str(file_name))
 
     # Save the family sim
-    family_sim.save(f'{output_dir}/family_sim.bin')
+    file_name = output_dir / 'family_sim.bin'
+    family_sim.save(str(file_name))
     # Save family asteroid particle assignments
     fam_asg_cols = ['ast_name', 'particle_number']
     fam_asg_df = pd.DataFrame(family_assignments, columns=fam_asg_cols)
-    fam_asg_df.to_hdf(f'{output_dir}/family_assignments.h5', 'family_assignments', mode='w')
+    file_name = output_dir / 'family_assignments.h5'
+    fam_asg_df.to_hdf(file_name.resolve(), 'family_assignments', mode='w')
 
     # Save the actives only sim. This is the simulation file without the test particles.
-    sim_file.save(f'{output_dir}/sim_actives.bin')
+    file_name = output_dir / 'sim_actives.bin'
+    sim_file.save(str(file_name))
 

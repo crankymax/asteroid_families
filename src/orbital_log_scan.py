@@ -1,5 +1,5 @@
 import sys
-import glob
+from pathlib import Path
 
 import h5py as h5
 import numpy as np
@@ -24,22 +24,25 @@ i_min = 0.0
 i_max = 0.55
 
 # indices in the particles array
-A = 6
-E = 7
-I = 8
+SMA = 6
+ECC = 7
+INC = 8
 
-ind_limits = {A: (a_min, a_max), E: (e_min, e_max), I: (i_min, i_max)}
+ind_limits = {SMA: (a_min, a_max), ECC: (e_min, e_max), INC: (i_min, i_max)}
 
 
-def scan_logs(particle_assignments_file: str, results_dir: str, project_dir: str) -> tuple:
+def scan_logs(particle_assignments_file: Path, results_dir: Path, project_dir: Path) -> tuple:
     integration_time = None
     time_taken = []
     escaped_asteroid_data = list()
     particles_simulated = 0
-    escaped_asteroids = set()
-    particles_assigned = pd.read_hdf(particle_assignments_file)
 
-    for pv_file in glob.glob(f"{results_dir}/*.h5"):
+    inner_solar = 0
+    outer_solar = 0
+    escaped_asteroids = set()
+    particles_assigned = pd.read_hdf(particle_assignments_file.resolve())
+
+    for pv_file in results_dir.glob('*.h5'):
         with h5.File(pv_file, 'r') as simulation_log:
             if simulation_log.attrs['simulation'] == 'actives':
                 continue
@@ -75,17 +78,37 @@ def scan_logs(particle_assignments_file: str, results_dir: str, project_dir: str
                     escaped_asteroids.add(f"{ast_name}{''.join(vec_list)}")
                     # we need the first item index for this sim_particle
                     escape_index = (np.where(outside[1] == sim_particle))[0][0]
+                    min_val_arg = np.argmin(part_values[:, sim_particle, param_index])
+                    min_val = part_values[min_val_arg, sim_particle, param_index]
+                    if param_index == SMA and min_val < a_min:
+                        inner_solar += 1
+                    max_val_arg = np.argmax(part_values[:, sim_particle, param_index])
+                    max_val = part_values[max_val_arg, sim_particle, param_index]
+                    if param_index == SMA and max_val > a_max:
+                        outer_solar += 1
                     escaped_asteroid_data.append([ast_name, ''.join(vec_list),
                                                   simulation_log.attrs['simulation'],
                                                   particle_number, param_index,
                                                   part_values[outside[0][escape_index], outside[1][escape_index],
                                                   param_index],
-                                                  int_values[outside[0][escape_index]]])
+                                                  int_values[outside[0][escape_index]],
+                                                  min_val,
+                                                  max_val])
 
     escaped_ast_cols = ['ast_name', 'vectors', 'sim_no', 'particle_number', 'parameter', 'parameter_value',
-                        'integration_year']
+                        'integration_year', 'min_val', 'max_val']
     escaped_ast_df = pd.DataFrame(escaped_asteroid_data, columns=escaped_ast_cols)
-    escaped_ast_df.to_hdf(f"{project_dir}escaped_asteroids.h5", 'escaped_asteroids', mode='w')
+    escapees_file = project_dir / "escaped_asteroids.h5"
+
+    with pd.HDFStore(str(escapees_file.resolve())) as hdf_store:
+        hdf_store.put('escaped_asteroids', escaped_ast_df)
+        hdf_store.get_storer('escaped_asteroids').attrs.metadata = {'integration_time': integration_time,
+                                                                    'simulated': particles_simulated,
+                                                                    'escaped': len(escaped_asteroids),
+                                                                    'outer_solar': outer_solar,
+                                                                    'inner_solar': inner_solar,
+                                                                    'avg_walltime': np.mean(time_taken),
+                                                                    }
 
     return len(escaped_asteroids), particles_simulated, np.mean(time_taken)
 
@@ -97,10 +120,22 @@ def collect_statistics(part_values):
     return desc_stats, deciles
 
 
-def plot_orbital_escapes(results_dir, project_dir: str):
-    xlabel_time = 'Years after start of simulation [$10^8 ~ yr$]'
+def plot_inner_outer_hist(ea_metadata):
+    int_time = ea_metadata['integration_time']
+
+
+def plot_orbital_escapes(results_dir: Path, project_dir: Path):
+    escapees_file = project_dir / "escaped_asteroids.h5"
+    xlabel_time = 'Years after start of simulation [$10^9 ~ yr$]'
+
     # Read the escaped asteroids file
-    ea_mmc3 = pd.read_hdf(f'{project_dir}escaped_asteroids.h5')
+    ea_mmc3 = None
+    ea_metadata = None
+    with pd.HDFStore(str(escapees_file.resolve())) as ea_file:
+        ea_mmc3 = ea_file.get('escaped_asteroids')
+        ea_metadata = ea_file.get_storer('escaped_asteroids').attrs.metadata
+
+    plot_inner_outer_hist(ea_metadata)
     # Get a list of all asteroids that have >= 65% of clones go missing
     ea_grouped1 = ea_mmc3[ea_mmc3.parameter == 6][['ast_name', 'vectors']].groupby('ast_name').size()
     asteroid_track_names = ea_grouped1[ea_grouped1 > (65 * 0.75)].index
@@ -118,18 +153,21 @@ def plot_orbital_escapes(results_dir, project_dir: str):
         (ax1, ax2, ax3) = gs.subplots(sharex=True)
 
         for p_no, (_, sim_file, particle_no) in enumerate(ast_array):
-            with h5.File(f"{results_dir}pvals_{sim_file:0>5}.h5", 'r') as sim_log:
+            with h5.File(results_dir / f"pvals_{sim_file:0>5}.h5", 'r') as sim_log:
                 # Unpack the H5
                 # Store the first array of time steps (they're duplicated across H5's)
                 if int_values is None:
                     int_values = sim_log['integration_time_values'][()]
                 # Copy the values for the particle
                 part_values = sim_log['particle_values'][()]
-                # TODO We need to truncate the series when A hits 0
-                # part_values[:, particle_no - 8, A].indexof(0.0)
-                ax1.scatter(int_values[:], part_values[:, particle_no - 8, A], s=5, marker='o')
-                ax2.scatter(int_values[:], part_values[:, particle_no - 8, E], s=5, marker='o')
-                ax3.scatter(int_values[:], part_values[:,  particle_no - 8, I], s=5, marker='o')
+                sma_0 = np.where(part_values[:, particle_no - 8, SMA] == 0.0)[0]
+                if len(sma_0) > 0:
+                    graph_end = sma_0[0]
+                else:
+                    graph_end = len(part_values)
+                ax1.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, SMA], s=5, marker='o')
+                ax2.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, ECC], s=5, marker='o')
+                ax3.scatter(int_values[:graph_end], part_values[:graph_end,  particle_no - 8, INC], s=5, marker='o')
 
         plt.xlabel(xlabel_time)
         ax1.set_ylabel("Semi-major axis $a$ [AU]")
@@ -145,11 +183,11 @@ def plot_orbital_escapes(results_dir, project_dir: str):
 
 if __name__ == '__main__':
     print(sys.argv)
-    clone_assignments = sys.argv[1]
-    results_dir = sys.argv[2]
-    project_dir = sys.argv[3]
-    escaped_c, simulated_c, avg_runtime = scan_logs(clone_assignments, results_dir, project_dir)
+    clone_assignments = Path(sys.argv[1])
+    cl_results_dir = Path(sys.argv[2])
+    cl_project_dir = Path(sys.argv[3])
+    escaped_c, simulated_c, avg_runtime = scan_logs(clone_assignments, cl_results_dir, cl_project_dir)
     print(f"Escaped asteroids:{escaped_c} Total simulated {simulated_c} "
           f"\nFraction escaped:{escaped_c/simulated_c}")
     print(f'Average run time {datetime.timedelta(seconds=avg_runtime)}')
-    plot_orbital_escapes(results_dir, project_dir)
+    plot_orbital_escapes(cl_results_dir, cl_project_dir)

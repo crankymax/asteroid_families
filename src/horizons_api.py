@@ -36,13 +36,14 @@ def retrieve_ephemeris(asteroids):
                        'CSV_FORMAT': 'YES', 'OBJ_DATA': 'YES', 'FORMAT': 'json'}
 
     asteroids_ephem = []
-    for asteroid in asteroids:
-        ast_name = asteroid[0]
+    for ast_name in asteroids.ast_name:
         if not ast_name.isnumeric():
             # print(f'Mangle this : {" ".join([ast_name[0:4], ast_name[4:]])}')
-            ast_name = " ".join([ast_name[0:4], ast_name[4:]])
+            horizons_ast_name = " ".join([ast_name[0:4], ast_name[4:]])
+        else:
+            horizons_ast_name = ast_name
 
-        horizons_params['COMMAND'] = f"'{ast_name};'"
+        horizons_params['COMMAND'] = f"'{horizons_ast_name};'"
         r = requests.get('https://ssd.jpl.nasa.gov/api/horizons.api',
                          data=horizons_params)
 
@@ -88,7 +89,7 @@ def convert_dy2yr(eph_df):
 
 
 def get_family_eph(data_dir, target_family):
-    family_eph = f'{data_dir}luthera_eph.h5'
+    family_eph = data_dir / 'ephemerides.h5'
 
     if not Path(family_eph).exists():
         target_ephemeris = retrieve_ephemeris(target_family)
@@ -96,8 +97,8 @@ def get_family_eph(data_dir, target_family):
         convert_dy2yr(trgt_eph_df)
 
         # Save a copy
-        trgt_eph_df.to_hdf(family_eph, 'luthera_eph', mode='w')
+        trgt_eph_df.to_hdf(family_eph.resolve(), 'luthera_eph', mode='w')
     else:
-        trgt_eph_df = pd.read_hdf(family_eph, 'luthera_eph')
+        trgt_eph_df = pd.read_hdf(family_eph.resolve(), 'luthera_eph')
 
     return trgt_eph_df
