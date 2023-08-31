@@ -175,7 +175,7 @@ def plot_orbital_escapes(results_dir: Path, project_dir: Path):
         ax2.set_ylabel("Eccentricity $e$ []")
         ax2.label_outer()
         ax3.set_ylabel("Inclination $i$ [radian]")
-        plt.savefig(f"{project_dir}plots/orb_evol_{ast_name.replace(' ', '_')}.png", dpi=300)
+        plt.savefig(project_dir / f"plots/orb_evol_{ast_name.replace(' ', '_')}.png", dpi=300)
         plt.close()
 
     print('Completed')
