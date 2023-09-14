@@ -68,9 +68,10 @@ def scan_logs(particle_assignments_file: Path, results_dir: Path, project_dir: P
                 for sim_particle in np.unique(outside[1]):
                     # TODO: Check to see if this is a null particle in the array
                     try:
-                        ast_name, vec_list, particle_number = sim_particles.iloc[[sim_particle]][['ast_name',
-                                                                                                  'particle_types',
-                                                                                                  'particle_number']].values[0]
+                        ast_name, vec_list, particle_number = \
+                            sim_particles.iloc[[sim_particle]][['ast_name',
+                                                                'particle_types',
+                                                                'particle_number']].values[0]
                     except IndexError:
                         print(f"We got an unallocated particle we'll skip file:{pv_file} particle:{sim_particle} "
                               f"parameter:{param_index}")
@@ -120,23 +121,16 @@ def collect_statistics(part_values):
     return desc_stats, deciles
 
 
-def plot_inner_outer_hist(ea_metadata):
-    int_time = ea_metadata['integration_time']
-
-
 def plot_orbital_escapes(results_dir: Path, project_dir: Path):
     escapees_file = project_dir / "escaped_asteroids.h5"
     xlabel_time = 'Years after start of simulation [$10^9 ~ yr$]'
 
     # Read the escaped asteroids file
     ea_mmc3 = None
-    ea_metadata = None
     with pd.HDFStore(str(escapees_file.resolve())) as ea_file:
         ea_mmc3 = ea_file.get('escaped_asteroids')
-        ea_metadata = ea_file.get_storer('escaped_asteroids').attrs.metadata
 
-    plot_inner_outer_hist(ea_metadata)
-    # Get a list of all asteroids that have >= 65% of clones go missing
+    # Get a list of all asteroids that have >= 75% of clones go missing
     ea_grouped1 = ea_mmc3[ea_mmc3.parameter == 6][['ast_name', 'vectors']].groupby('ast_name').size()
     asteroid_track_names = ea_grouped1[ea_grouped1 > (65 * 0.75)].index
 
@@ -146,6 +140,8 @@ def plot_orbital_escapes(results_dir: Path, project_dir: Path):
         ast_array = escaped_ast_sim.loc[escaped_ast_sim.ast_name == ast_name].values
         print(ast_name)
         int_values = None
+        plot_vals = np.zeros([10000, len(ast_array), 11])
+        xkcd_colors = list(mpl.colors.XKCD_COLORS.keys())
 
         fig = plt.figure(figsize=(8, 8))
         fig.suptitle(f'Orbital Evolution for clones of asteroid {ast_name} ')
@@ -157,18 +153,21 @@ def plot_orbital_escapes(results_dir: Path, project_dir: Path):
                 # Unpack the H5
                 # Store the first array of time steps (they're duplicated across H5's)
                 if int_values is None:
-                    int_values = sim_log['integration_time_values'][()]
+                    int_values = sim_log['integration_time_values'][()]/(2*np.pi)
                 # Copy the values for the particle
                 part_values = sim_log['particle_values'][()]
                 sma_0 = np.where(part_values[:, particle_no - 8, SMA] == 0.0)[0]
                 if len(sma_0) > 0:
-                    graph_end = sma_0[0]
+                    graph_end = sma_0[0] + 1
                 else:
                     graph_end = len(part_values)
-                ax1.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, SMA], s=5, marker='o')
-                ax2.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, ECC], s=5, marker='o')
-                ax3.scatter(int_values[:graph_end], part_values[:graph_end,  particle_no - 8, INC], s=5, marker='o')
-
+                color = xkcd_colors[p_no * 13]
+                ax1.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, SMA],
+                            s=5, marker='o', c=color)
+                ax2.scatter(int_values[:graph_end], part_values[:graph_end, particle_no - 8, ECC],
+                            s=5, marker='o', c=color)
+                ax3.scatter(int_values[:graph_end], part_values[:graph_end,  particle_no - 8, INC],
+                            s=5, marker='o', c=color)
         plt.xlabel(xlabel_time)
         ax1.set_ylabel("Semi-major axis $a$ [AU]")
         ax1.label_outer()

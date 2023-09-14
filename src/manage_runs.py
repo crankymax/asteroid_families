@@ -25,7 +25,7 @@ def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
         create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
 
 
-def create_pbs_job(job_range, parent_dir, walltime="72", int_time='3.0e9', queue='default', cmd='qsub'):
+def create_pbs_job(job_range, parent_dir, walltime="72", int_time='4.5e9', queue='default', cmd='qsub'):
     # Open a pipe to the qsub command.
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE)
 
@@ -34,7 +34,7 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='3.0e9', queue
         #PBS -N mc_pm6_prod
         
         #PBS -q {queue}
-        #PBS -l select=1:ncpus=1:mem=2gb
+        #PBS -l select=1:ncpus=1:mem=4gb
         #PBS -l walltime={walltime}:00:00
         
         # Set the job array size

@@ -4,7 +4,6 @@ from horizons_api import get_family_eph, convert_dy2yr
 from parse_afp_family import afp_family_members, afp_proper_elements, mmr_atlas
 from sim_creation import create_mercurious_sim
 from prepare_clones import create_clones
-from orbital_log_scan import scan_logs
 from pathlib import Path
 
 
@@ -13,7 +12,7 @@ def simulation_project():
     family_id = '1303'
 
     project_dir = Path('../../luthera_ast/')
-    # Add active asteroid  426/P ???
+    # Add active asteroid  426/P
     # COMMAND = 'DES=1003609;NOFRAG;'
     """$$SOE
     2451544.500000000, A.D. 2000-Jan-01 00:00:00.0000,  2.334269053942694E+00, -1.808322981199081E+00,  
@@ -32,7 +31,7 @@ def simulation_project():
     afp_families = afp_family_members(project_dir)
     luthera_family_afp = afp_families[afp_families.family_id == family_id]
 
-    # Extract the mmr atlas
+    # Extract the 2 body mmr atlas
     mmr_atlas(project_dir)
 
     # Join the family members and the proper_elements
@@ -65,19 +64,6 @@ def simulation_project():
     create_clones(lth_eph_df, input_dir, base_sim, part_per_sim)
 
     print(f"Completed creating:{active_list}")
-
-    # Zip or tar the inputs
-    # upload the sim files
-
-    # kick off the jobs??
-
-    # Determine escaped asteroids
-    results_dir = project_dir / 'results'
-    results_dir.mkdir(parents=True, exist_ok=True)
-    particle_assignments = input_dir / 'clone_assignments.h5'
-    escaped_asteroids = scan_logs(particle_assignments, results_dir, project_dir)
-
-    # scan the pval files to track the escaped asteroids
 
 
 if __name__ == '__main__':
