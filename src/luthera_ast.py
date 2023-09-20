@@ -8,10 +8,20 @@ from pathlib import Path
 
 
 def simulation_project():
+    """
+    Project definition that initiates a simulation project.
+
+    This is a template for other asteroid family simulations. It allows the definition of
+    a family name and identifier. The function then creates the dataframes that contain the
+    data that are used to create the simulations. In this case we define the luthera family
+    of 1303
+    :return:
+    """
     family_name = 'luthera'
     family_id = '1303'
 
-    project_dir = Path('../../luthera_ast/')
+    project_dir = Path(f'../../{family_name}_ast/')
+
     # Add active asteroid  426/P
     # COMMAND = 'DES=1003609;NOFRAG;'
     """$$SOE

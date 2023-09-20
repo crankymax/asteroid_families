@@ -97,8 +97,8 @@ def get_family_eph(data_dir, target_family):
         convert_dy2yr(trgt_eph_df)
 
         # Save a copy
-        trgt_eph_df.to_hdf(family_eph.resolve(), 'luthera_eph', mode='w')
+        trgt_eph_df.to_hdf(family_eph.resolve(), 'ephemerides', mode='w')
     else:
-        trgt_eph_df = pd.read_hdf(family_eph.resolve(), 'luthera_eph')
+        trgt_eph_df = pd.read_hdf(family_eph.resolve(), 'ephemerides')
 
     return trgt_eph_df
