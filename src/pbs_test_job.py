@@ -3,6 +3,11 @@ import sys
 
 
 def long_wait(*args):
+    """
+    This was used to test the manage runs logic on the cluster.
+    :param args:
+    :return:
+    """
     time.sleep(1*60)
     return True
 

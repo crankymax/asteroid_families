@@ -10,7 +10,11 @@ mmr_2b_atlas = 'mmr_2b_atlas.html'
 
 
 def download_afp_data(project_dir):
-    # TODO Work in progress
+    """
+    Transfer the asteroid family data from the AFP website
+    :param project_dir: Target directory
+    :return: None
+    """
     afp_fam_local = Path(project_dir) / afp_fam_members
     # link to family summary data
     family_members_URL = 'http://asteroids.matf.bg.ac.rs/fam/families/afp.fam.members'
@@ -26,12 +30,23 @@ def download_afp_data(project_dir):
 
 
 def download_mmr_data(project_dir):
+    """
+    Download the 2 body mean motion resonance atlas
+    :param project_dir: Target directory
+    :return: None
+    """
     mmr_2b_URL = "http://www.fisica.edu.uy/~gallardo/atlas/2020/atlas2020.html"
     mmr_2b_local = Path(project_dir) / mmr_2b_atlas
     request.urlretrieve(mmr_2b_URL, mmr_2b_local.resolve())
 
 
 def afp_family_members(data_dir):
+    """
+    Check the data directory, and if the data is not present download it and
+    create a Pandas dataframe
+    :param data_dir: data directory
+    :return: AFP family pandas dataframe
+    """
     fam_hdf = Path(data_dir) / 'afp_families.h5'
     if not fam_hdf.exists():
         ast_cols = [(0, 11), (14, 20), (23, 34), (37, 48), (51, 62), (64, 72)]
@@ -42,8 +57,8 @@ def afp_family_members(data_dir):
             download_afp_data(data_dir)
 
         afp_fam_df = pd.read_fwf(fam_rec_input.resolve(), skiprows=1, colspecs=ast_cols, names=afp_fam_cols,
-                                dtype={'ast_name': str, 'abs_mag': float, 'a_P': float, 'e_P': float,
-                                       'sineI_P': float, 'family_id': str})
+                                 dtype={'ast_name': str, 'abs_mag': float, 'a_P': float, 'e_P': float,
+                                        'sineI_P': float, 'family_id': str})
 
         afp_fam_df.to_hdf(fam_hdf.resolve(), 'afp_families', mode='w')
     else:
@@ -52,6 +67,12 @@ def afp_family_members(data_dir):
 
 
 def afp_proper_elements(data_dir):
+    """
+    Check the data directory and if the AFP proper elements data does not exist
+    download it, parse it and save it to a Pandas dataframe
+    :param data_dir: Target directory
+    :return: Proper elements pandas dataframe
+    """
     proper_elements_hdf = Path(data_dir) / 'afp_proper_elements.h5'
     if not proper_elements_hdf.exists():
         element_cols = [(0, 11), (12, 18), (20, 30), (31, 41), (42, 52), (53, 64), (65, 77), (78, 90),
@@ -79,6 +100,12 @@ def afp_proper_elements(data_dir):
 
 
 def mmr_atlas(data_dir):
+    """
+    Check if the target directory already has the MMR dataframe. If not download and parse the
+    dataframe.
+    :param data_dir: Directory for MMR data.
+    :return: MMR pandas dataframe
+    """
     proper_elements_hdf = Path(data_dir) / 'mmr_atlas.h5'
     if not proper_elements_hdf.exists():
         mmr_cols = [(0, 2), (5, 7), (8, 10), (10, 20), (20, 26), (28, 32), (32, 36), (38, 40),
@@ -99,7 +126,3 @@ def mmr_atlas(data_dir):
         mmr_atlas_df = pd.read_hdf(proper_elements_hdf.resolve(), 'mmr_atlas', mode='r')
 
     return mmr_atlas_df
-
-
-
-

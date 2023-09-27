@@ -4,10 +4,16 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 
+# Column names used in the ephemeris dataframe
 eph_cols_df = ['ast_name', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ', 'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']
 
 
 def is_float(element: any) -> bool:
+    """
+    Check the element can be converted to a float
+    :param element: string representing a float value for an orbital parameter
+    :return: True if float otherwise False
+    """
     try:
         float(element)
         return True
@@ -16,6 +22,11 @@ def is_float(element: any) -> bool:
 
 
 def check_ephem(ast_values):
+    """
+    Check the list of values to ensure that they all have non-zero not-null values
+    :param ast_values:
+    :return: True if valid value False otherwise
+    """
     if any(ast_values) == 0.0:
         return False
     elif any(ast_values) is None:
@@ -25,6 +36,11 @@ def check_ephem(ast_values):
 
 
 def retrieve_ephemeris(asteroids):
+    """
+    Extract the ephemeris values for the asteroids in the dataframe parameter
+    :param asteroids: pandas dataframe with ast_name column
+    :return: list of asteroid ephemeris
+    """
     results = dict()
     missed_ephem = list()
     results['not_found'] = missed_ephem
@@ -37,28 +53,34 @@ def retrieve_ephemeris(asteroids):
 
     asteroids_ephem = []
     for ast_name in asteroids.ast_name:
+        # There is an incompatibility between AFP and Horizons with multi-oppositional
+        # asteroids (i.e. horizons wants '2004 YR21'  vs AFP provides '2004YR21'
         if not ast_name.isnumeric():
             # print(f'Mangle this : {" ".join([ast_name[0:4], ast_name[4:]])}')
             horizons_ast_name = " ".join([ast_name[0:4], ast_name[4:]])
         else:
             horizons_ast_name = ast_name
 
+        # Setup the JSON HTTP request
         horizons_params['COMMAND'] = f"'{horizons_ast_name};'"
         r = requests.get('https://ssd.jpl.nasa.gov/api/horizons.api',
                          data=horizons_params)
-
+        # Process the result
         hozres = r.json()['result']
         biz_start = hozres.find('$$SOE')
         biz_end = hozres.find('$$EOE')
+        # Check we got the bizness
         if biz_start == -1:
 
             print(f'Error fetching ephemeris for asteroid |{ast_name}|')
+            # No bizness; no worries. Try the next one
             continue
 
+        # Extract the ephemeris text
         horizon_ephem = hozres[biz_start+6: biz_end]
-
+        # Create the new list to store the values
         ephem_values = [ast_name]
-
+        # The request stated we wanted CSV format so parsing is easier
         horizon_values = horizon_ephem.split(',')
         for val in horizon_values[2:14]:
             if val.strip() == 'n.a.':
@@ -68,7 +90,7 @@ def retrieve_ephemeris(asteroids):
                 continue
             else:
                 ephem_values.append(float(val))
-
+        # Check parsed values, and append if all good.
         if check_ephem(ephem_values):
             asteroids_ephem.append(ephem_values)
         else:
@@ -78,6 +100,12 @@ def retrieve_ephemeris(asteroids):
 
 
 def convert_dy2yr(eph_df):
+    """
+    The Horizons data has velocities as AU/dy; but REBOUND defaults to AY/yr. This changes the values
+    in the parameter dataframe. However it will also handle dict's
+    :param eph_df: The pandas dataframe with Horizons values
+    :return:
+    """
     dy2yr = 365.25 / (2 * np.pi)
 
     eph_df['VX'] = eph_df['VX'] * dy2yr
@@ -89,6 +117,13 @@ def convert_dy2yr(eph_df):
 
 
 def get_family_eph(data_dir, target_family):
+    """
+    A check is made if the data is locally available, if so that is used. Otherwise the target_family
+    is retrieved from Horizons.
+    :param data_dir: Project directory
+    :param target_family: A list of asteroid identifiers.
+    :return: ephemeris dataframe.
+    """
     family_eph = data_dir / 'ephemerides.h5'
 
     if not Path(family_eph).exists():

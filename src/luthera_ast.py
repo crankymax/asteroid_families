@@ -11,10 +11,14 @@ def simulation_project():
     """
     Project definition that initiates a simulation project.
 
-    This is a template for other asteroid family simulations. It allows the definition of
+    This was the base template for asteroid family simulations. It allows the definition of
     a family name and identifier. The function then creates the dataframes that contain the
     data that are used to create the simulations. In this case we define the luthera family
-    of 1303
+    of 1303.
+
+    The Semele (semele_fam.py) and Euterpe (euterpe_fam.py) families have an updated structure
+    and should be the basis for any new simulations.
+
     :return:
     """
     family_name = 'luthera'
@@ -62,15 +66,21 @@ def simulation_project():
                                                           'sX', 'sY', 'sZ', 'sVX', 'sVY', 'sVZ']]
 
     # create the sim files
+    # These parameters can be altered to suit the simulation resources available
+    # Number of test-particles to be inserted into each simulation file
     part_per_sim = 3
 
+    # The list of planets (active bodies) to be sourced from Horizons
     active_list = ['Sun', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    # This dict provides the mass of Ceres which is unavailable from Horizons
     actives_mass = {2: 5.21e-10}
     input_dir = project_dir / 'inputs'
     input_dir.mkdir(parents=True, exist_ok=True)
 
+    # Creation of the base simulation file with a Mercurius integrator. An alternative is the WHFast integrator.
     base_sim = create_mercurious_sim(active_list, actives_mass)
 
+    # Create the required simulation files in the input directory.
     create_clones(lth_eph_df, input_dir, base_sim, part_per_sim)
 
     print(f"Completed creating:{active_list}")

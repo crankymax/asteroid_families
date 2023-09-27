@@ -40,19 +40,24 @@ def simulation_project(base_dir, family_name, family_id):
         family_elements = pd.read_hdf(proper_elements.resolve(), 'family_proper_elements', mode='r')
 
     # Retrieve the ephemeris
-    lth_eph_df = get_family_eph(project_dir, family_elements)
+    ephemeris_df = get_family_eph(project_dir, family_elements)
 
     # create the sim files
+    # These parameters can be altered to suit the simulation resources available
+    # Number of test-particles to be inserted into each simulation file
     part_per_sim = 6
-
+    # The list of planets (active bodies) to be sourced from Horizons
     active_list = ['Sun', 'Venus', 'Earth', 'Mars', 'Ceres', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+    # This dict provides the mass of Ceres which is unavailable from Horizons
     actives_mass = {4: 5.21e-10}
     input_dir = project_dir / 'inputs'
     input_dir.mkdir(parents=True, exist_ok=True)
 
+    # Creation of the base simulation file with a Mercurius integrator. An alternative is the WHFast integrator.
     base_sim = create_mercurious_sim(active_list, actives_mass)
 
-    create_clones(lth_eph_df, input_dir, base_sim, part_per_sim)
+    # Create the required simulation files in the input directory.
+    create_clones(ephemeris_df, input_dir, base_sim, part_per_sim)
 
     print(f"Completed creating:{active_list}")
 

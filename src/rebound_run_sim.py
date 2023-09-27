@@ -15,11 +15,26 @@ import warnings
 # This function allows the simulations to be started in a
 # InterruptiblePool on a machine that isn't using PBS.
 def prun_sim(params) -> bool:
+    """
+    The params dict is used when calling a function through the InterruptiblePool
+    interface. Which provides multithreading without PBS. Use mainly for testing the
+    simulations on a local workstation.
+    :param params: Dictionary of parameters to be used in run_sim call
+    :return: The value from run_sim
+    """
     base_dir, sim_number, int_length, max_walltime = params
     return run_sim(base_dir, sim_number, int_length, max_walltime)
 
 
 def run_sim(proj_dir, sim_number, int_length, max_walltime=168.0) -> bool:
+    """
+
+    :param proj_dir: Project directory
+    :param sim_number: simulation file to run
+    :param int_length: Length of integration time
+    :param max_walltime: Maximum runtime allowed
+    :return: Last integration time, or -1 if simulation was completed.
+    """
     config_nm = proj_dir.split('/')[-2]
     start = time.time()
     if sim_number.isdigit():
@@ -43,6 +58,15 @@ def run_sim(proj_dir, sim_number, int_length, max_walltime=168.0) -> bool:
 
 
 def initialise_config(proj_dir, int_length, sim_desig):
+    """
+    Check for a previous log file, then initialise based on the int_length
+    and contents of log file as required.
+    :param proj_dir: directory for data files
+    :param int_length: Length of simulation time
+    :param sim_desig: name of simulation being run
+    :return: simulation configuration
+    """
+    # Number of values we record from the rebound simulation
     vals: int = 11
 
     sim_config = dict()
@@ -88,11 +112,12 @@ def initialise_config(proj_dir, int_length, sim_desig):
             sim_config['sim_energy_values'] = np.concatenate([sim_config['sim_energy_values'],
                                                               np.zeros(len(new_times))],
                                                              axis=0)
-
+        # Open the REBOUND file
         sim_file = f'{log_dir}sim_{sim_desig}_fin.bin'
         sim_config['sim'] = rebound.Simulation(sim_file)
 
     else:
+        # We're starting a new simulation
         sim_file = f'{input_dir}sim_{sim_desig}.bin'
         sim_config['sim'] = rebound.Simulation(sim_file)
         sim_config['sim_desig'] = sim_desig
@@ -122,6 +147,13 @@ def initialise_config(proj_dir, int_length, sim_desig):
 
 
 def store_config(base_dir, stop_index, sim_config):
+    """
+    Store the particle orbital values into an HDF log file
+    :param base_dir: project directory
+    :param stop_index: last integration step (-1 if completed)
+    :param sim_config: simulation configuration values to be stored
+    :return: None
+    """
     # setup log file
     log_dir = f'{base_dir}results/'
     sim_config['sim'].save(f"{log_dir}sim_{sim_config['sim_desig']}_fin.bin")
@@ -136,6 +168,12 @@ def store_config(base_dir, stop_index, sim_config):
 
 
 def particle_simulation(sim_config, actives=False):
+    """
+    Manage the REBOUND simulation.
+    :param sim_config: simulation configuration values
+    :param actives: True if there are no particles to be logged.
+    :return:
+    """
     run_values = sim_config['particle_values']
     sim = sim_config['sim']
     sim_energy_values = sim_config['sim_energy_values']

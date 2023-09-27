@@ -1,8 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import datetime
 
+"""
+This is an easy way to create a simple Gantt chart. Lots of limitations: only weeks allowed etc.
+"""
+
+# Dataframe holds the tasks that each have a description, start week and duration.
 gantt = pd.DataFrame([
     dict(Task="Retrieve Luthera family \nasteroid data", Start=0, Duration=4),
     dict(Task="Write Literature Review", Start=2, Duration=5),
@@ -19,13 +23,17 @@ gantt = pd.DataFrame([
     dict(Task="Create final presentation", Start=30, Duration=4)
     ])
 
+# Start date is then used to estimate the dates for the tasks
 start_date = datetime.datetime.strptime('2023-02-20', "%Y-%m-%d")
 week_dates = [datetime.datetime.strftime(start_date+datetime.timedelta(weeks=week), '%m-%d') for week in range(0, 36, 4)]
+# Add a column to give the end date.
 gantt['start_to_end'] = gantt.Start + gantt.Duration
 
+# Print out the calculated tasks
 for task in gantt.sort_values('Start').index:
     print(gantt.loc[task]['Task'], ' & ', gantt.loc[task]['Start'], ' & ', gantt.loc[task]['Duration'], ' \\\\ ')
 
+#Plot the tasks as an horizontal bar chart
 fig, ax = plt.subplots(1, figsize=(20, 6))
 ax.barh(gantt.Task, gantt.Duration, left=gantt.Start)
 ax.invert_yaxis()

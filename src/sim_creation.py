@@ -2,6 +2,15 @@ import rebound
 
 
 def create_rebound_sim(active_list, manual_masses, particle_period):
+    """
+    Initialises a REBOUND simulation file with values from HORIZONS for the list
+    of planets in active_list. The manual masses are assigned if supplied for planets with
+    no HORIZONS mass. Values are calculated for 2451544.5 JD. dt is set to 1/30 of the particle_period
+    :param active_list: List of planets or bodies
+    :param manual_masses: Mass values in KG for
+    :param particle_period: The particle to use to set dt
+    :return: REBOUND simulation
+    """
     sim = rebound.Simulation()
     date = 'JD2451544.5'
     sim.add(active_list, date=date)
@@ -17,12 +26,26 @@ def create_rebound_sim(active_list, manual_masses, particle_period):
 
 
 def create_whfast_sim(active_list, manual_masses=None, particle_period=1):
+    """
+    Configure whfast as the integrator for the simulation.
+    :param active_list: List of planets or bodies
+    :param manual_masses: Mass values in KG for
+    :param particle_period: The particle to use to set dt
+    :return: REBOUND simulation
+    """
     wh_sim = create_rebound_sim(active_list, manual_masses, particle_period)
     wh_sim.integrator = "whfast"
     return wh_sim
 
 
 def create_mercurious_sim(active_list, manual_masses=None, particle_period=1):
+    """
+    Configure mercurius as the integrator
+    :param active_list: List of planets or bodies
+    :param manual_masses: Mass values in KG for
+    :param particle_period: The particle to use to set dt
+    :return: REBOUND simulation
+    """
     merc_sim = create_rebound_sim(active_list, manual_masses, particle_period)
     merc_sim.integrator = "mercurius"
     # collision and boundary options

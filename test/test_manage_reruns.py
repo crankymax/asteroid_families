@@ -1,12 +1,19 @@
 from unittest import TestCase
-from manage_reruns import rerun_jobs
-
+from manage_runs import create_run_jobs, rerun_errors
 
 class RerunsTest(TestCase):
-    def test_rerun_jobs(self):
-        sim_dir = '../../asteroid_data/'
-        project_dir = 'mc_pm6_3'
+    def test_run_array_jobs(self):
+        project_dir = '../../asteroid_data/mc_pm6_3'
         walltime = '72'
         integration_time = '2.0e9'
+        start_sim = 0
+        end_sim = 100
+        array_size = 10
+        create_run_jobs(start_sim, end_sim, array_size, project_dir, walltime, integration_time, cmd="./qsub")
 
-        rerun_jobs(sim_dir, project_dir, walltime, integration_time, cmd="./qsub")
+    def test_run_errors(self):
+        project_dir = '../../asteroid_data/mc_pm6_3'
+        error_file = '../../asteroid_data/mc_pm6_3/rerun_jobs'
+
+        rerun_errors(error_file, project_dir, cmd="./qsub")
+
