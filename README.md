@@ -17,34 +17,48 @@ The REBOUND simulation files are created in the input directory.
 
 Running the simulations:
 1. Export the simulation files to the cluster environment with the project structure below.
-7. Create the required PBS jobs to complete the simulation runs
-8. After the simulations have completed, run the simulation analysis on the cluster
-9. Download the escaped asteroids data
-10. Use the Python Notebooks to analyse the data
+2. Create the required PBS jobs to complete the simulation runs
+3. After the simulations have completed, run the simulation analysis on the cluster
+4. Download the escaped asteroids data
+5. Copy the Python Notebooks from this source folder to the project folders 
+6. Execute and edit the notebooks to analyse the data
 
 # Project Structure
 The structure of a project starts at the project directory. In this 
 case it's luthera. Under this are the input, results and console directories
 ```
-|luthera_ast
-|_console
-|_input
-|_plots
-|_results
+luthera_ast
+|__console
+|__input
+|__notebooks
+|__plots
+|__results
 ```
 
-# Initiating simulation runs
+Running the `simulation_project` function will create the directory structure above under a directory named after 
+the family. The `console` directory stores the output from PBS, the `input` directory contains the simulation and 
+configuration files used to run the simulation, the `notebooks` directory contains the notebooks used to analyse the 
+simulation results, `plots` contains output from the orbital log scans and `results` contains the HDF logs from the 
+simulations. 
 
-  613  python asteroid_sim/manage_runs.py 0 19044 120 asteroid_sim/
+## Initiating simulation runs
+Creating a number of PBS array jobs is done by executing the following line: 
 
-  911  python asteroid_sim/manage_runs.py asteroid_sim/mc_pm6_3/rerun_jobs asteroid_sim/
+    python asteroid_sim/manage_runs.py 0 19044 120 asteroid_sim/
 
-# Initiating log scan
+To restart some jobs that failed:
 
- qsub chk_mc_pm6_3 
+    python asteroid_sim/manage_runs.py asteroid_sim/mc_pm6_3/rerun_jobs asteroid_sim/
+
+Where the rerun_jobs parameter is a file of the simulation identifier numbers that require a rerun
+
+## Initiating log scan
+When the PBS jobs have completed the escaped asteroids are detected by running the following command
+
+    qsub orbital_log_scan 
 
 ## In Progress
-The ba
+~~~~The ba
 
 
 
