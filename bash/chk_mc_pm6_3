@@ -1,0 +1,20 @@
+#!/bin/bash -l
+#PBS -N scan_luthera
+
+#PBS -q default
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=12:00:00
+
+#PBS -P 0201-BWALKER
+#PBS -o asteroid_sim/luthera/console/
+#PBS -j oe
+#PBS -m bea
+#PBS -M your@email.edu.au
+
+# Change to the python rebound module
+module load python/3.9.13-gcc8.3.1-jhn 
+# Change to the asteroids directory
+cd asteroid_sim/
+
+# python command line
+python orbital_log_scan.py ./luthera/inputs/clone_assignments.h5 ./luthera/results/ ./luthera/

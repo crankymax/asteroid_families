@@ -1,6 +1,4 @@
-import os
 import sys
-from pathlib import Path
 
 from subprocess import Popen, PIPE
 
@@ -19,6 +17,7 @@ def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
     :param cmd: this is used for unit testing without PBS
     :return: None
     """
+    # Abandoned concept to allow different queues to be used.
     # ['default', '24'], ['default', '168'],
     queues = [['default', '48']]
     q_i = 0
@@ -77,7 +76,7 @@ def job_restart(job_number, parent_dir, walltime="72", int_time='4.5e9', queue='
         #PBS -l walltime={walltime}:00:00
 
         #PBS -P 0201-BWALKER
-        #PBS -o asteroid_sim/mc_pm6_3/console/
+        #PBS -o asteroid_sim/luthera/console/
         #PBS -j oe
 
         # Change to the python rebound module
@@ -87,8 +86,8 @@ def job_restart(job_number, parent_dir, walltime="72", int_time='4.5e9', queue='
         cd {parent_dir}
 
         # python command line 
-        # TODO replace  /mc_pm6_3/ with simulation directory
-        python rebound_run_sim.py {job_number} {int_time} ./mc_pm6_3/ {walltime}
+        # TODO replace  /luthera/ with simulation directory
+        python rebound_run_sim.py {job_number} {int_time} ./luthera/ {walltime}
         """
 
     # Send job_string to qsub
@@ -125,7 +124,7 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='4.5e9', queue
         #PBS -J {job_range}
         
         #PBS -P 0201-BWALKER
-        #PBS -o asteroid_sim/mc_pm6_3/console/
+        #PBS -o asteroid_sim/luthera/console/
         #PBS -j oe
         
         # Change to the python rebound module
@@ -135,8 +134,8 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='4.5e9', queue
         cd {parent_dir}
         
         # python command line
-        # TODO replace  /mc_pm6_3/ with simulation directory
-        python rebound_run_sim.py $PBS_ARRAY_INDEX {int_time} ./mc_pm6_3/ {walltime}
+        # TODO replace  /luthera/ with simulation directory
+        python rebound_run_sim.py $PBS_ARRAY_INDEX {int_time} ./luthera/ {walltime}
         """
 
     # Send job_string to qsub

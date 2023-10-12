@@ -18,8 +18,12 @@ def simulation_project(base_dir, family_name, family_id):
     :return:
     """
 
-    project_dir = Path(f'{base_dir}') / f'{family_name}_ast/'
+    project_dir = Path(f'{base_dir}') / f'{family_name}_fam/'
     project_dir.mkdir(parents=True, exist_ok=True)
+    (project_dir / 'plots').mkdir(parents=True, exist_ok=True)
+    (project_dir / 'console').mkdir(parents=True, exist_ok=True)
+    (project_dir / 'results').mkdir(parents=True, exist_ok=True)
+    (project_dir / 'inputs').mkdir(parents=True, exist_ok=True)
 
     # Extract the family from AFP data
     afp_families = afp_family_members(project_dir)

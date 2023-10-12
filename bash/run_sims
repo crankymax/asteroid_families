@@ -1,0 +1,24 @@
+#!/bin/bash -l
+#PBS -N test_luthera
+
+#PBS -q default
+#PBS -l select=1:ncpus=1:mem=2gb
+#PBS -l walltime=168:00:00
+
+# Set the job array size
+#PBS -J 0-4000
+
+#PBS -P 0888-lucky_project
+#PBS -o asteroid_sim/luthera/console/
+#PBS -j oe
+# PBS  -m bea
+# PBS  -M your@email.edu.au
+
+# Change to the python rebound module
+module load python/3.9.13-gcc8.3.1-jhn 
+
+# Change to the asteroids directory
+cd asteroid_sim/
+
+# python command line
+python rebound_run_sim.py $PBS_ARRAY_INDEX 1.0e9 ./luthera/ 168.0
