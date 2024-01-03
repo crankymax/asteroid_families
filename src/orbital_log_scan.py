@@ -5,7 +5,6 @@ import h5py as h5
 import numpy as np
 import pandas as pd
 
-from scipy import stats
 import datetime as datetime
 
 import matplotlib as mpl
