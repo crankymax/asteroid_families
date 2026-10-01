@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 from datetime import timedelta
 from math import floor, log10
@@ -71,9 +72,10 @@ def initialise_config(proj_dir, int_length, sim_desig):
 
     sim_config = dict()
     # setup log file
-    log_dir = f'{proj_dir}results/'
-    sim_config['log_file'] = f"{log_dir}pvals_{sim_desig}.h5"
-    input_dir = f'{proj_dir}inputs/'
+    proj_dir = Path(proj_dir)
+    log_dir = proj_dir / 'results'
+    sim_config['log_file'] = log_dir / f"pvals_{sim_desig}.h5"
+    input_dir = proj_dir / 'inputs'
     # Check for a current log file
     if os.path.exists(sim_config['log_file']):
         print(f"Restarting simulation {sim_desig}")
@@ -113,12 +115,12 @@ def initialise_config(proj_dir, int_length, sim_desig):
                                                               np.zeros(len(new_times))],
                                                              axis=0)
         # Open the REBOUND file
-        sim_file = f'{log_dir}sim_{sim_desig}_fin.bin'
+        sim_file = str(log_dir / f"sim_{sim_desig}_fin.bin")
         sim_config['sim'] = rebound.Simulation(sim_file)
 
     else:
         # We're starting a new simulation
-        sim_file = f'{input_dir}sim_{sim_desig}.bin'
+        sim_file = str(input_dir / f"sim_{sim_desig}.bin")
         sim_config['sim'] = rebound.Simulation(sim_file)
         sim_config['sim_desig'] = sim_desig
         sim_config['int_length'] = int_length
