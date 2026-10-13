@@ -6,7 +6,7 @@ import manage_runs
 class AlbusRun(unittest.TestCase):
     test_dir = '../../asteroid_data/sim_data/mvc_3/'
     def test_find_input_files(self):
-        manage_runs.create_pbs_job(self.test_dir)
+        manage_runs.create_pbs_job('0-9', self.test_dir, cmd='./qsub')
 
     def test_create_run_jobs(self):
         start_sim = 0

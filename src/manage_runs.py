@@ -24,17 +24,16 @@ def create_run_jobs(start_sim, end_sim, array_size, project_dir, cmd='qsub'):
     q_l = len(queues)
 
     current_sim = start_sim
-    while current_sim < end_sim:
-        if (current_sim + array_size-1) < end_sim:
-            job_range = f"{current_sim}-{current_sim + array_size-1}"
-            current_sim += array_size-1
-        else:
-            job_range = f"{current_sim}-{end_sim}"
-            current_sim = end_sim
-
+    while current_sim <= end_sim:
+        last_sim = min(current_sim + array_size-1, end_sim)
         queue = queues[(q_i % q_l)]
         q_i += 1
-        create_pbs_job(job_range, project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
+        if last_sim == current_sim:
+            # PBS array jobs need more than one index, so a single sim is a plain job
+            job_restart(str(current_sim), project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
+        else:
+            create_pbs_job(f"{current_sim}-{last_sim}", project_dir, cmd=cmd, queue=queue[0], walltime=queue[1])
+        current_sim = last_sim + 1
 
 
 def rerun_errors(job_numbers, project_dir, cmd='qsub'):
@@ -114,7 +113,8 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='4.5e9', queue
 
     # Customize your options here
     job_string = f"""#!/bin/bash -l
-        #PBS -N luthera_45gyr_fix
+        #PBS -N luthera_45gyr_fixll
+        
         
         #PBS -q {queue}
         #PBS -l select=1:ncpus=1:mem=4gb
@@ -134,7 +134,7 @@ def create_pbs_job(job_range, parent_dir, walltime="72", int_time='4.5e9', queue
         cd asteroid_sim
         
         # python command line
-        python rebound_run_sim.py $PBS_ARRAY_INDEX {int_time} . {walltime}
+        python rebound_run_sim.py $PBS_ARRAY_INDEX {int_time} {parent_dir} {walltime}
         """
 
     # Send job_string to qsub
