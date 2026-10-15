@@ -27,7 +27,7 @@ def determine_status(project, target_int_length=4.5e9, action=True):
         try:
             sim_config = rebound.Simulation(str(sim_file))
             sim_config = None
-        except OSError as prob:
+        except (OSError, RuntimeError) as prob:
             print(f"We got a problem {prob} with {sim_file.name} regenerate config")
             continue
 
@@ -52,7 +52,7 @@ def determine_status(project, target_int_length=4.5e9, action=True):
                 if action:
                     restart_sim(log_file, sim_desig, sim_final_file)
             sim_config = None
-        except OSError as prob:
+        except (OSError, RuntimeError) as prob:
             print(f"We got a problem {prob} with {sim_final_file.name} rerun")
             sim_rerun.append(sim_desig)
             if action:

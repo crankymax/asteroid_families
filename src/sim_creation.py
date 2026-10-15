@@ -51,10 +51,10 @@ def create_mercurious_sim(active_list, manual_masses=None, particle_period=1):
     # collision and boundary options
     merc_sim.collision = "direct"
     merc_sim.collision_resolve = "merge"
-    merc_sim.collision_resolve_keep_sorted = 1
     merc_sim.boundary = "open"
     boxsize = 200.
-    merc_sim.configure_box(boxsize)
+    # root_size is the full width of the box
+    merc_sim.root_size = boxsize
     merc_sim.track_energy_offset = 1
 
     return merc_sim

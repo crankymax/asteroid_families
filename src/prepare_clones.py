@@ -77,11 +77,11 @@ def create_clones(asteroid_ephem, output_dir, sim_file, clones_per_sim=5):
     # Write out the simulations
     for sim_no, sim in enumerate(sim_list):
         file_name = output_dir / f'sim_{sim_no:05}.bin'
-        sim.save(str(file_name))
+        sim.save_to_file(str(file_name))
 
     # Save the family sim
     file_name = output_dir / 'family_sim.bin'
-    family_sim.save(str(file_name))
+    family_sim.save_to_file(str(file_name))
 
     # Save family asteroid particle assignments
     fam_asg_cols = ['ast_name', 'particle_number']
@@ -91,5 +91,5 @@ def create_clones(asteroid_ephem, output_dir, sim_file, clones_per_sim=5):
 
     # Save the actives only sim. This is the simulation file without the test particles.
     file_name = output_dir / 'sim_actives.bin'
-    sim_file.save(str(file_name))
+    sim_file.save_to_file(str(file_name))
 

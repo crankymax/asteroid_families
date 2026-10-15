@@ -2,7 +2,7 @@ import math
 from pathlib import Path
 import shutil
 import itertools
-from rebound.interruptible_pool import InterruptiblePool
+from multiprocessing import Pool
 import unittest
 
 import numpy as np
@@ -64,8 +64,9 @@ class TestSimulation(unittest.TestCase):
                                         [str(sim_no) for sim_no in range(6)],
                                         [1.e6, 2.5e6, 5.e6, 7.5e6, 1.e7],
                                         [2]))
-        pool = InterruptiblePool(processes=3)
-        res = pool.map(prun_sim, params)
+        # One sim per process, REBOUND 5 can corrupt particle names when a process loads several
+        with Pool(processes=3, maxtasksperchild=1) as pool:
+            res = pool.map(prun_sim, params)
         print(res)
 
     def test_restart_2byIntTime(self):

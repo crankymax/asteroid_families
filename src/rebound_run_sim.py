@@ -14,12 +14,13 @@ import warnings
 
 
 # This function allows the simulations to be started in a
-# InterruptiblePool on a machine that isn't using PBS.
+# multiprocessing Pool on a machine that isn't using PBS.
 def prun_sim(params) -> bool:
     """
-    The params dict is used when calling a function through the InterruptiblePool
+    The params tuple is used when calling a function through the multiprocessing Pool
     interface. Which provides multithreading without PBS. Use mainly for testing the
-    simulations on a local workstation.
+    simulations on a local workstation. Create the pool with maxtasksperchild=1, REBOUND 5
+    can corrupt particle names when a process loads more than one simulation file.
     :param params: Dictionary of parameters to be used in run_sim call
     :return: The value from run_sim
     """
@@ -29,7 +30,6 @@ def prun_sim(params) -> bool:
 
 def run_sim(proj_dir, sim_number, int_length, max_walltime=168.0) -> bool:
     """
-
     :param proj_dir: Project directory
     :param sim_number: simulation file to run
     :param int_length: Length of integration time
@@ -88,6 +88,7 @@ def initialise_config(proj_dir, int_length, sim_desig):
             sim_config['times'] = run_log['integration_time_values'][()]
             sim_config['sim_energy_values'] = run_log['sim_energy_values'][()]
             sim_config['particle_values'] = run_log['particle_values'][()]
+            sim_config['particle_names'] = run_log['particle_names'][()]
 
         # Check the stop index -1 == completed sim
         if sim_config['start_index'] != 0 and sim_config['int_length'] != int_length:
@@ -110,6 +111,8 @@ def initialise_config(proj_dir, int_length, sim_desig):
             new_particle_log = np.zeros((len(new_times), particle_dims[1], vals))
             # Join the arrays
             sim_config['particle_values'] = np.concatenate([sim_config['particle_values'], new_particle_log], axis=0)
+            new_name_log = np.zeros((len(new_times), particle_dims[1]), dtype=sim_config['particle_names'].dtype)
+            sim_config['particle_names'] = np.concatenate([sim_config['particle_names'], new_name_log], axis=0)
             # Extend the energy array
             sim_config['sim_energy_values'] = np.concatenate([sim_config['sim_energy_values'],
                                                               np.zeros(len(new_times))],
@@ -117,21 +120,26 @@ def initialise_config(proj_dir, int_length, sim_desig):
         # Open the REBOUND file
         sim_file = str(log_dir / f"sim_{sim_desig}_fin.bin")
         sim_config['sim'] = rebound.Simulation(sim_file)
+        # The saved sim matches the last logged step (index -1 when the run completed)
+        last_names = [n.decode('utf-8') for n in sim_config['particle_names'][sim_config['start_index'] - 1]]
+        check_particle_names(sim_config['sim'], sim_desig == 'actives', last_names)
 
     else:
         # We're starting a new simulation
         sim_file = str(input_dir / f"sim_{sim_desig}.bin")
         sim_config['sim'] = rebound.Simulation(sim_file)
+        check_particle_names(sim_config['sim'], sim_desig == 'actives')
         sim_config['sim_desig'] = sim_desig
         sim_config['int_length'] = int_length
         sim_config['start_index'] = 0
         sim_config['clock_time'] = 0
 
-        # record the number of particles
-        if len(sim_config['sim'].particles) - sim_config['sim'].N_active > 0:
-            n_particles = len(sim_config['sim'].particles) - sim_config['sim'].N_active
+        # record the number of particles. N_active is SIZE_MAX when it hasn't been set
+        sim = sim_config['sim']
+        if sim.N_active < sim.N:
+            n_particles = sim.N - sim.N_active
         else:
-            n_particles = sim_config['sim'].N_active - 1
+            n_particles = sim.N - 1
 
         # Create evenly spaced integration log times
         exp = floor(log10(int_length))
@@ -143,6 +151,9 @@ def initialise_config(proj_dir, int_length, sim_desig):
         # Integrate for run_length years
         sim_config['times'] = np.linspace(log_time, int_length * 2 * np.pi, log_time)
         sim_config['particle_values'] = np.zeros((log_time, n_particles, vals))
+        # Name of the particle in each particle_values row, empty if the row is empty
+        name_len = max([len(p.name.encode('utf-8')) for p in sim.particles if p.name] + [1])
+        sim_config['particle_names'] = np.zeros((log_time, n_particles), dtype=f'S{name_len}')
         sim_config['sim_energy_values'] = np.zeros(log_time)
 
     return sim_config
@@ -158,7 +169,7 @@ def store_config(base_dir, stop_index, sim_config):
     """
     # setup log file
     log_dir = f'{base_dir}results/'
-    sim_config['sim'].save(f"{log_dir}sim_{sim_config['sim_desig']}_fin.bin")
+    sim_config['sim'].save_to_file(f"{log_dir}sim_{sim_config['sim_desig']}_fin.bin")
     with h5.File(sim_config['log_file'], 'w') as run_log:
         run_log.attrs['simulation'] = sim_config['sim_desig']
         run_log.attrs['int_length'] = sim_config['int_length']
@@ -167,6 +178,38 @@ def store_config(base_dir, stop_index, sim_config):
         run_log.create_dataset('integration_time_values', data=sim_config['times'])
         run_log.create_dataset('sim_energy_values', data=sim_config['sim_energy_values'])
         run_log.create_dataset('particle_values', data=sim_config['particle_values'])
+        run_log.create_dataset('particle_names', data=sim_config['particle_names'])
+
+
+def first_logged_particle(sim, actives):
+    """
+    :param sim: REBOUND simulation
+    :param actives: True for the planets only simulation
+    :return: index of the first particle written to the log
+    """
+    if actives or sim.N_active >= len(sim.particles):
+        # No test particles, so log everything except the Sun
+        return 1
+    return sim.N_active
+
+
+def check_particle_names(sim, actives, logged_names=None):
+    """
+    REBOUND 5 can corrupt particle names when a process loads more than one simulation
+    file. Stop rather than log values against the wrong asteroid.
+    :param sim: REBOUND simulation loaded from file
+    :param actives: True for the planets only simulation
+    :param logged_names: names from the last logged step when restarting
+    :return: None
+    """
+    names = [p.name or '' for p in sim.particles[first_logged_particle(sim, actives):]]
+    named = [n for n in names if n]
+    if logged_names is not None:
+        # Rows after the remaining particles are empty in the log
+        names = names + [''] * (len(logged_names) - len(names))
+    if len(set(named)) != len(named) or (logged_names is not None and names != logged_names):
+        raise RuntimeError("Particle names in the simulation file are corrupted. REBOUND 5 can do this when a "
+                           "process loads more than one simulation, run each simulation in its own process.")
 
 
 def particle_simulation(sim_config, actives=False):
@@ -177,6 +220,7 @@ def particle_simulation(sim_config, actives=False):
     :return:
     """
     run_values = sim_config['particle_values']
+    run_names = sim_config['particle_names']
     sim = sim_config['sim']
     sim_energy_values = sim_config['sim_energy_values']
     times = sim_config['times']
@@ -191,18 +235,17 @@ def particle_simulation(sim_config, actives=False):
         safety_margin = walltime_cutoff * 0.05
 
     start_index = sim_config['start_index']
-    if actives:
-        start_particle = 1
-    else:
-        start_particle = sim.N_active
+    start_particle = first_logged_particle(sim, actives)
 
     # Capture warning messages
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         for ti in range(start_index, len(times)):
             sim.integrate(times[ti], exact_finish_time=0)
-            sim_energy_values[ti] = sim.calculate_energy()
+            sim_energy_values[ti] = sim.energy()
             for i, p in enumerate(sim.particles[start_particle:]):
+                # Particles shift rows when one is removed, so record who is in each row
+                run_names[ti][i] = p.name.encode('utf-8') if p.name else b''
                 run_values[ti][i][0] = p.x
                 run_values[ti][i][1] = p.y
                 run_values[ti][i][2] = p.z

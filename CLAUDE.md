@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Simulates asteroid families from the Asteroid Families Portal (AFP) with REBOUND on the UniSQ HPC cluster (Fawkes, PBS scheduler), then finds clones that escape the family's orbital region. Built as an MSC6001 dissertation project. There is no packaging, build step, or linter config; modules in `src/` import each other by bare name (e.g. `from sim_creation import ...`), so `src/` must be on the path / the working directory.
 
-Local Python env: conda env `rebnd2` (`~/miniforge3/envs/rebnd2`, referenced in `pyrefly.toml` and `.vscode/settings.json`). On the cluster, jobs use `module load python/3.9.13-gcc...`, so keep code Python 3.9 compatible. Key deps: `rebound`, `h5py`, `pandas` (with PyTables for HDF), `numpy`, `matplotlib`, `requests`.
+Local Python env: conda env `rbnd2` (`~/miniforge3/envs/rbnd2`, REBOUND 5, Python 3.13). The code targets REBOUND 5 only; don't add compatibility with REBOUND 3/4 (no particle hashes, `configure_box`, `collision_resolve_keep_sorted`, `save()` or `calculate_energy()`). REBOUND 5 can't read `.bin` files written by older versions. On the cluster, jobs use `module load python/3.9.13-gcc...`, so keep code Python 3.9 compatible. Key deps: `rebound`, `h5py`, `pandas` (with PyTables for HDF), `numpy`, `matplotlib`, `requests`.
 
 ## Pipeline (end to end)
 
@@ -24,8 +24,10 @@ Local Python env: conda env `rebnd2` (`~/miniforge3/envs/rebnd2`, referenced in 
 ## Simulation run/restart semantics (`rebound_run_sim.py`)
 
 - Sim numbers get zero-padded to 5 digits (`sim_00042.bin`); `actives` is the special planets-only sim (it logs every particle from index 1 instead of from `N_active`).
-- Output per sim: `results/pvals_NNNNN.h5` (datasets `integration_time_values`, `sim_energy_values`, `particle_values[time, particle, 11]` = x,y,z,vx,vy,vz,a,e,inc,omega,Omega; attrs `simulation`, `int_length`, `start_index`, `clock_time`) and `results/sim_NNNNN_fin.bin`.
+- Output per sim: `results/pvals_NNNNN.h5` (datasets `integration_time_values`, `sim_energy_values`, `particle_values[time, particle, 11]` = x,y,z,vx,vy,vz,a,e,inc,omega,Omega, `particle_names[time, particle]` = REBOUND particle name in that row as bytes, empty if the row is empty; attrs `simulation`, `int_length`, `start_index`, `clock_time`) and `results/sim_NNNNN_fin.bin`.
 - Walltime-aware: integration stops early with a safety margin (30 min, or 5% for short walltimes) and saves; if a `pvals` file exists, rerunning the same command resumes from `start_index`. `start_index == 0` in a saved log means "completed", and that is the only state where rerunning with a larger `int_length` extends the time array. Extending an unfinished run raises.
+- Rows in `particle_values` shift when a particle is removed (open boundary or merge), so match rows by `particle_names`, not position. Sims with no test particles (`N_active >= N`, e.g. the early escapees sims) log every particle from index 1.
+- REBOUND 5 can corrupt particle names when one Python process loads more than one simulation file. `run_sim` checks the names after loading and raises if they're wrong, so run each sim in its own process (PBS does; locally use `multiprocessing.Pool(maxtasksperchild=1)`).
 - Time units: years × 2π (REBOUND G=1 units). The number of log points comes from the magnitude of `int_length`.
 - `store_config` builds paths as `f'{base_dir}results/'`, so `project_dir` arguments need a trailing slash.
 

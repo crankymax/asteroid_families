@@ -51,7 +51,12 @@ def rerun_errors(job_numbers, project_dir, cmd='qsub'):
                 job_restart(job_no.strip(), project_dir, cmd=cmd)
 
 
-def job_restart(job_number, parent_dir, walltime="168", int_time='4.5e9', queue='default', cmd='qsub'):
+def job_restart(job_number,
+                parent_dir,
+                walltime="168",
+                int_time='4.5e9',
+                queue='default',
+                cmd='qsub'):
     """
     Creates a PBS job for a simulation that requires restarting. This function is used when a simulation
     has and error and must restart. It is still 'hard wired' to a couple of values like directory and
