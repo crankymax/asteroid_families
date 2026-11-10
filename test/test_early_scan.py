@@ -10,7 +10,7 @@ from unittest import TestCase
 import numpy as np
 import rebound
 
-from orbital_log_scan import scan_logs
+from orbital_log_scan import clone_loss_track_names, plot_orbital_escapes, scan_logs
 from early_fixture import (AST_A, ASTEROIDS, PLANETS, SMA, TIMES, EarlyProject)
 
 
@@ -174,3 +174,17 @@ class ScanEarlyLogsTest(TestCase):
 
         with self.assertRaises(ValueError):
             self.scan()
+
+    def test_plot_tracked_asteroids(self):
+        # Early escapees have one particle each, so one escape is all of its clones
+        middle = self.project.sim_asteroids(0).iloc[1].ast_name
+        self.set_a(0, middle, 4.5, from_step=4)
+        self.scan()
+        (self.project.dir / 'plots').mkdir()
+
+        names = clone_loss_track_names(self.project.dir, clone_count=1, loss_fraction=0.5)
+        plot_orbital_escapes(self.project.results_dir, self.project.dir, names)
+
+        self.assertEqual(names, [middle])
+        self.assertTrue((self.project.dir / 'plots' / f'orb_evol_{middle}.png').exists())
+        self.assertEqual(clone_loss_track_names(self.project.dir), [])

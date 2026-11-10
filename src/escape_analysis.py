@@ -14,7 +14,7 @@ def escape_years(ea_df: pd.DataFrame) -> pd.DataFrame:
     """
     Semi-major axis escapes with the integration time converted to years (cell 6)
     """
-    escapee_years = ea_df.loc[ea_df.parameter == 6][['vectors', 'integration_year']]
+    escapee_years = ea_df.loc[ea_df.parameter == 6][['ast_name', 'vectors', 'integration_year']]
     escapee_years['integration_year'] = escapee_years.integration_year/(2*np.pi)
     return escapee_years
 
@@ -23,8 +23,8 @@ def mean_escape_by_asteroid(escapee_years: pd.DataFrame) -> pd.DataFrame:
     """
     Mean escape year and number of escaped clones for each asteroid (cells 12 and 13)
     """
-    ey_years = escapee_years.groupby(by=escapee_years.index)
-    mean_escape = ey_years.mean('integration_year')
+    ey_years = escapee_years.groupby('ast_name')
+    mean_escape = ey_years[['integration_year']].mean()
     mean_escape['vec_count'] = ey_years.vectors.count()
 
     counts, bins = np.histogram(mean_escape.vec_count, 4)
@@ -60,8 +60,8 @@ def attach_sma_extremes(fam_df: pd.DataFrame, ea_df: pd.DataFrame) -> pd.DataFra
     """
     Add the mean min/max semi-major axis and where the asteroid went (cell 27)
     """
-    max_min_sma = ea_df.loc[ea_df.parameter == 6][['min_val', 'max_val']]
-    mean_sma = max_min_sma.groupby(by=max_min_sma.index).mean(['min_val', 'max_val'])
+    max_min_sma = ea_df.loc[ea_df.parameter == 6][['ast_name', 'min_val', 'max_val']]
+    mean_sma = max_min_sma.groupby('ast_name')[['min_val', 'max_val']].mean()
 
     fam_df['mean_min_val'] = mean_sma.min_val
     fam_df['mean_max_val'] = mean_sma.max_val

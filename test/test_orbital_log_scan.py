@@ -1,5 +1,5 @@
 from unittest import TestCase
-from orbital_log_scan import plot_orbital_escapes, scan_logs
+from orbital_log_scan import clone_loss_track_names, plot_orbital_escapes, scan_logs
 
 from pathlib import Path
 
@@ -12,6 +12,7 @@ class Test(TestCase):
         scan_logs(self.asteroid_assignments, self.results_dir, self.project_dir)
 
     def test_plot_orbital_escapes(self):
-        plot_orbital_escapes(Path(self.results_dir), Path(self.project_dir))
+        plot_orbital_escapes(Path(self.results_dir), Path(self.project_dir),
+                             clone_loss_track_names(Path(self.project_dir)))
 
 

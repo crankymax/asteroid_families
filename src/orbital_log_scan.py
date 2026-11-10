@@ -141,25 +141,41 @@ def scan_logs(particle_assignments_file: Path, results_dir: Path, project_dir: P
     return len(escaped_asteroids), particles_simulated, np.mean(time_taken)
 
 
-def plot_orbital_escapes(results_dir: Path, project_dir: Path):
+def read_escapees(project_dir: Path) -> pd.DataFrame:
     """
-    Plots of the log files are created for all asteroids that lose 75% or more
-    test-particles.
-    :param results_dir: Location of the log files
     :param project_dir: Project directory
-    :return: None
+    :return: escaped_asteroids DataFrame written by scan_logs
     """
     escapees_file = project_dir / "escaped_asteroids.h5"
+    with pd.HDFStore(str(escapees_file.resolve())) as ea_file:
+        return ea_file.get('escaped_asteroids')
+
+
+def clone_loss_track_names(project_dir: Path, clone_count=65, loss_fraction=0.75) -> list:
+    """
+    Asteroids that lose more than loss_fraction of their clones from the semi-major axis bounds.
+    :param project_dir: Project directory
+    :param clone_count: Number of clones simulated for each asteroid
+    :param loss_fraction: Fraction of the clones that must escape
+    :return: asteroid names for plot_orbital_escapes
+    """
+    ea_mmc3 = read_escapees(project_dir)
+    ea_grouped1 = ea_mmc3[ea_mmc3.parameter == SMA][['ast_name', 'vectors']].groupby('ast_name').size()
+    return list(ea_grouped1[ea_grouped1 > (clone_count * loss_fraction)].index)
+
+
+def plot_orbital_escapes(results_dir: Path, project_dir: Path, asteroid_track_names):
+    """
+    Plots of the log files are created for the escaped clones of each asteroid in asteroid_track_names.
+    :param results_dir: Location of the log files
+    :param project_dir: Project directory
+    :param asteroid_track_names: asteroids to plot, e.g. from clone_loss_track_names
+    :return: None
+    """
     xlabel_time = 'Years after start of simulation [$10^9 ~ yr$]'
 
     # Read the escaped asteroids file
-    ea_mmc3 = None
-    with pd.HDFStore(str(escapees_file.resolve())) as ea_file:
-        ea_mmc3 = ea_file.get('escaped_asteroids')
-
-    # Get a list of all asteroids that have >= 75% of clones go missing
-    ea_grouped1 = ea_mmc3[ea_mmc3.parameter == 6][['ast_name', 'vectors']].groupby('ast_name').size()
-    asteroid_track_names = ea_grouped1[ea_grouped1 > (65 * 0.75)].index
+    ea_mmc3 = read_escapees(project_dir)
 
     escaped_ast_sim = ea_mmc3[ea_mmc3.ast_name.isin(asteroid_track_names)][['ast_name', 'sim_no', 'particle_number']]
     escaped_ast_sim = escaped_ast_sim.drop_duplicates()
@@ -217,4 +233,4 @@ if __name__ == '__main__':
     print(f"Escaped asteroids:{escaped_c} Total simulated {simulated_c} "
           f"\nFraction escaped:{escaped_c/simulated_c}")
     print(f'Average run time {datetime.timedelta(seconds=avg_runtime)}')
-    plot_orbital_escapes(cl_results_dir, cl_project_dir)
+    plot_orbital_escapes(cl_results_dir, cl_project_dir, clone_loss_track_names(cl_project_dir))
