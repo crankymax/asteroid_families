@@ -1,0 +1,6 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "python.defaultInterpreterPath": "/Users/brettwalker/miniforge3/envs/rbnd2/bin/python",
+    "python.useEnvironmentsExtension": false
+}

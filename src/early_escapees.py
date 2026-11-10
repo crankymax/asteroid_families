@@ -1,16 +1,24 @@
+import itertools
+from pathlib import Path
+
+from multiprocessing import Pool
+from sys import argv
+
 import pandas as pd
 import numpy as np
 
 import rebound
 
 from horizons_api import convert_dy2yr, retrieve_ephemeris, eph_cols_df
-from pathlib import Path
+from rebound_run_sim import prun_sim
 
 M_sol: float = 1.989e30
 NEPTUNE_SMA_AU: float = 30.0
 AU_M: float = 1.495978707e11
 p_v = 0.0387
 x_dens_gcm3 = 3.2
+
+family_name = 'luthera_ee'
 
 
 def sol_mass_from_vol_dens(volume, density):
@@ -108,9 +116,9 @@ def create_sim_files(asteroids_df: pd.DataFrame, project_dir: Path, sim_count=9)
         sim, particle_numbers = build_sim_file(base_sim, sim_asts)
         sim.save_to_file(str(input_dir / f'sim_{sim_no:05}.bin'))
         for ast_name, particle_number in zip(sim_asts['ast_name'], particle_numbers):
-            assignments.append([ast_name, sim_no, particle_number])
+            assignments.append([ast_name, ['X', 'Y', 'Z', 'VX', 'VY', 'VZ'], sim_no, particle_number])
 
-    asg_df = pd.DataFrame(assignments, columns=['ast_name', 'sim_no', 'particle_number'])
+    asg_df = pd.DataFrame(assignments, columns=['ast_name', 'particle_types', 'sim_no', 'particle_number'])
     asg_df.to_hdf((input_dir / 'early_assignments.h5').resolve(), key='early_assignments', mode='w')
     return asg_df
 
@@ -146,5 +154,22 @@ def simulation_project():
     print(asg_df.groupby('sim_no').size())
 
 
+def run_early_asts():
+    project_dir = Path(f'../../{family_name}/')
+
+    params = list(itertools.product([str(project_dir)],
+                                    [str(sim_no) for sim_no in range(9)],
+                                    [5.0e8],
+                                    [168]))
+
+    # One sim per process, REBOUND 5 can corrupt particle names when a process loads several
+    with Pool(processes=9, maxtasksperchild=1) as pool:
+        res = pool.map(prun_sim, params)
+    print(res)
+
+
 if __name__ == '__main__':
-    simulation_project()
+    if len(argv) > 1 and argv[1] == 'run':
+        run_early_asts()
+    else:
+        simulation_project()
